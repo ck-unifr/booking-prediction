@@ -220,39 +220,34 @@ print('corr score of action_id and has_booking {}'.format(corr_score))
 
 
 
-def get_nb_bookings_dict(df, column_name):
+def get_nb_bookings_dict(df, column_name, has_booking_name='has_booking'):
     # key: column value  value: number of bookings
     dict_nb_bookings = dict()
-    referer_code_list = df[column_name].unique()
-    # print('referer code')
-    # print(referer_code_list)
-    for code in referer_code_list:
-        values = train_user_df[train_user_df['referer_code'] == code]['has_booking'].values
+    col_list = df[column_name].unique()
+    # print(column_name)
+    # print(col_list)
+    for value in col_list:
+        values = df[train_user_df[column_name] == value][has_booking_name].values
         nb = 0
         for val in values:
             if val == 1:
                 nb += 1
-        dict_referer_code[code] = nb
+        dict_nb_bookings[value] = nb
+
+    return dict_nb_bookings, col_list
 
 
-# key: referer code, value: number of bookings
-dict_referer_code = dict()
-referer_code_list = train_user_df['referer_code'].unique()
-print('referer code')
-print(referer_code_list)
-for code in referer_code_list:
-    values = train_user_df[train_user_df['referer_code']==code]['has_booking'].values
-    nb = 0
-    for val in values:
-        if val == 1:
-            nb += 1
-    dict_referer_code[code] = nb
+feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
 
-for code, nb in dict_referer_code.items():
-    print('referer code {}, #bookings {}'.format(code, nb))
+for feature_column in feature_columns:
+    dict_feature_column, feature_column_list = get_nb_bookings_dict(train_user_df, feature_column)
+    print('\n --------------------')
+    print(feature_column)
+    print(feature_column_list)
+    for code, nb in dict_feature_column.items():
+        print('{}: {} #bookings: {}'.format(feature_column, code, nb))
+    print('\n --------------------\n')
 
-
-dict_is_app = dict()
 
 
 # ----------
