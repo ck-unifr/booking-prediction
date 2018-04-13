@@ -38,6 +38,9 @@
 # 	- step: The number identifying the action in the session
 
 import warnings
+
+from sklearn.ensemble import RandomForestClassifier
+
 warnings.filterwarnings('ignore')
 
 import numpy as np
@@ -49,6 +52,10 @@ from sklearn.metrics import matthews_corrcoef
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
+from sklearn.externals import joblib
+from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
+
 
 import xgboost as xgb
 from xgboost import XGBClassifier
@@ -227,10 +234,12 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3,
     https://www.kaggle.com/tilii7/hyperparameter-grid-search-with-xgboost
     """
 
-    xgb_clf = XGBClassifier(learning_rate=0.02,
-                        n_estimators=100,
-                        objective='binary:logistic',
-                        silent=True, nthread=nthread)
+    # xgb_clf = XGBClassifier(learning_rate=0.01,
+    #                     n_estimators=200,
+    #                     objective='binary:logistic',
+    #                     silent=True, nthread=nthread)
+
+    xgb_clf = XGBClassifier(nthread=nthread)
 
     if hyperparameter_tuning:
         params = {
@@ -272,25 +281,47 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3,
         xgb_clf.fit(train_sub_x, train_sub_y)
 
     xgb_model_path = 'xgb.model'
-    xgb_clf.save_model(xgb_model_path)
-    # joblib.dump(xgb_clf, xgb_model_path)
+    # xgb_clf.save_model(xgb_model_path)
+    joblib.dump(xgb_clf, xgb_model_path)
     print('save xgb model to {}'.format(xgb_model_path))
 
     return xgb_clf, xgb_model_path
 
 
-def predict_xgb(xgb_model_path, X_test):
-    dtest_mat = xgb.DMatrix(X_test)
-    xgb_clf = xgb.Booster()
-    xgb_clf.load_model(xgb_model_path)
-    y_pred = xgb_clf.predict(dtest_mat)
+def train_rf(X_train, Y_train, hyperparameter_tuning=False,):
+    model = RandomForestClassifier(max_depth=6, random_state=0)
 
+    model_path = 'rf.model'
+    joblib.dump(model, model_path)
+    print('save rf model to {}'.format(model_path))
+
+    return model, model_path
+
+
+def train_nb(X_train, Y_train,):
+    # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
+    clf = GaussianNB()
+    clf.fit(X_train, Y_train,)
+
+    model_path = 'gnb.model'
+    joblib.dump(model, model_path)
+    print('save GaussianNB model to {}'.format(model_path))
+
+    return model, model_path
+
+
+def predict(model_path, X_test):
+    # dtest_mat = xgb.DMatrix(X_test)
+    # xgb_clf = xgb.Booster()
+    # xgb_clf.load_model(xgb_model_path)
+    model = joblib.load(model_path)
+    # y_pred = model.predict(X_test)
+    y_pred = model.predict_prob(X_test)
     return y_pred
 
+model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
 
-xgb_clf, xgb_model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True)
-
-y_pred = xgb_clf.predict(val_x)
+y_pred = model.predict(val_x)
 # y_pred = predict_xgb(xgb_model_path, val_x)
 
 print('y pred shape')
@@ -300,6 +331,11 @@ print(y_pred)
 
 # --------
 # Feature engineering
+# category data in machine learning
+# Reference:
+# https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-66041f734512
+# https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-42fd0a43b009
+
 
 
 # ---------
