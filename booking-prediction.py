@@ -38,11 +38,10 @@
 # 	- step: The number identifying the action in the session
 
 import warnings
+warnings.filterwarnings('ignore')
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
-
-warnings.filterwarnings('ignore')
 
 import numpy as np
 import pandas as pd
@@ -228,11 +227,7 @@ def get_nb_bookings_dict(df, column_name, has_booking_name='has_booking'):
     # print(col_list)
     for value in col_list:
         values = df[train_user_df[column_name] == value][has_booking_name].values
-        nb = 0
-        for val in values:
-            if val == 1:
-                nb += 1
-        dict_nb_bookings[value] = nb
+        dict_nb_bookings[value] = sum(values)
 
     return dict_nb_bookings, col_list
 
