@@ -39,7 +39,8 @@
 
 import warnings
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
 
 warnings.filterwarnings('ignore')
 
@@ -55,7 +56,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.externals import joblib
 from sklearn.naive_bayes import GaussianNB
 from sklearn.naive_bayes import MultinomialNB
-
+from sklearn import linear_model
 
 import xgboost as xgb
 from xgboost import XGBClassifier
@@ -69,6 +70,9 @@ TRAIN_ACTION_FILE_PATH = 'data/case_study_actions_train.csv'       # training se
 TARGET_ACTION_FILE_PATH = 'data/case_study_actions_target.csv'     # user actions in the target sessions
 
 
+# -------------------
+# Step 1: read and explore the data
+#
 train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
 train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
 
@@ -86,22 +90,22 @@ print(target_booking_df.head(10))
 train_user_id_list = train_booking_df['user_id'].unique()
 train_session_id_list = train_booking_df['session_id'].unique()
 
-print('---------------')
+print('\n---------------')
 print('number of users (train booking data): {}'.format(len(train_user_id_list)))
 print('number of sessions (tarin booking data): {}'.format(len(train_session_id_list)))
 print('dataframe size (train booking data)')
 print(train_booking_df.shape)
-print('---------------')
+print('---------------\n')
 
 target_user_id_list = target_booking_df['user_id'].unique()
 target_session_id_list = target_booking_df['session_id'].unique()
 
-print('---------------')
+print('\n---------------')
 print('number of users (target booking data): {}'.format(len(target_user_id_list)))
 print('number of sessions (target booking data): {}'.format(len(target_session_id_list)))
 print('dataframe size (target booking data)')
 print(target_booking_df.shape)
-print('---------------')
+print('---------------\n')
 
 
 # print('---------------')
@@ -141,7 +145,7 @@ target_session_id_action_list = target_action_df['session_id'].unique()
 print('---------------')
 print('number of users (target action data): {}'.format(len(target_user_id_action_list)))
 print('number of sessions (target action data): {}'.format(len(target_session_id_action_list)))
-print('dataframe size (train booking data)')
+print('dataframe size (target booking data)')
 print(target_action_df.shape)
 print('---------------')
 
@@ -172,6 +176,8 @@ print(train_user_df.shape)
 # print(train_user_df.shape)
 print(train_user_df.columns)
 print(train_user_df.head(5))
+print('ymd (train)')
+print(train_user_df['ymd'].unique())
 
 target_user_df =  pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'])
 print('target user df shape')
@@ -180,14 +186,16 @@ print(target_user_df.shape)
 # print(train_user_df.shape)
 print(target_user_df.columns)
 print(target_user_df.head(5))
+print('ymd (target)')
+print(target_user_df['ymd'].unique())
 
 
 # print('---------------')
 # print(train_user_df[train_user_df['user_id']==388309106223940])
 
 
-# --------
-# Naive approach
+# ----------
+# Step 2. naive approach
 feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
 target_column = ['has_booking']
 
@@ -227,7 +235,7 @@ def timer(start_time=None):
         print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
 
-def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3, param_comb=5):
+def train_xgb(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4, folds=3, param_comb=5):
     """
     Train a xgb model
     Reference
@@ -239,7 +247,7 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3,
     #                     objective='binary:logistic',
     #                     silent=True, nthread=nthread)
 
-    xgb_clf = XGBClassifier(nthread=nthread)
+    xgb_clf = XGBClassifier(nthread=n_jobs)
 
     if hyperparameter_tuning:
         params = {
@@ -257,9 +265,9 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3,
         skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
 
         random_search = RandomizedSearchCV(xgb_clf, param_distributions=params, n_iter=param_comb, scoring='roc_auc',
-                                           n_jobs=nthread,
+                                           n_jobs=n_jobs,
                                            cv=skf.split(X_train, Y_train),
-                                           verbose=3, random_state=1001)
+                                           verbose=3, random_state=42)
 
         start_time = timer(None)
         random_search.fit(X_train, Y_train)
@@ -288,8 +296,9 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, nthread=4, folds=3,
     return xgb_clf, xgb_model_path
 
 
-def train_rf(X_train, Y_train, hyperparameter_tuning=False,):
-    model = RandomForestClassifier(max_depth=6, random_state=0)
+def train_rf(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4):
+    model = RandomForestClassifier(max_depth=6, random_state=0, n_jobs=n_jobs)
+    model.fit(X_train, Y_train)
 
     model_path = 'rf.model'
     joblib.dump(model, model_path)
@@ -298,10 +307,10 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False,):
     return model, model_path
 
 
-def train_nb(X_train, Y_train,):
+def train_nb(X_train, Y_train, hyperparameter_tuning=False):
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
-    clf = GaussianNB()
-    clf.fit(X_train, Y_train,)
+    model = GaussianNB()
+    model.fit(X_train, Y_train,)
 
     model_path = 'gnb.model'
     joblib.dump(model, model_path)
@@ -309,25 +318,56 @@ def train_nb(X_train, Y_train,):
 
     return model, model_path
 
+def train_lr(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4):
+    model = LogisticRegression(n_jobs=n_jobs)
+    model.fit(X_train, Y_train)
+
+    if hyperparameter_tuning:
+        reg = linear_model.RidgeCV(alphas=[0.1, 1.0, 10.0])
+        reg.fit(X_train, Y_train)
+        model = reg
+
+    model_path = 'lr.model'
+    joblib.dump(model, model_path)
+
+    print('save GaussianNB model to {}'.format(model_path))
+
+    return model, model_path
+
+
 
 def predict(model_path, X_test):
-    # dtest_mat = xgb.DMatrix(X_test)
-    # xgb_clf = xgb.Booster()
-    # xgb_clf.load_model(xgb_model_path)
+    """
+    load the model and do prediction
+    """
     model = joblib.load(model_path)
-    # y_pred = model.predict(X_test)
-    y_pred = model.predict_prob(X_test)
+    # y_pred = model.predict_prob(X_test)
+    y_pred = model.predict(X_test)
     return y_pred
 
-model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
+def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'],):
+    y_pred = predict(model_paths[0], X_test)
 
-y_pred = model.predict(val_x)
-# y_pred = predict_xgb(xgb_model_path, val_x)
+    for i in range(1, len(model_paths)):
+        y_pred += predict(model_paths[0], X_test)
+    y_pred = y_pred*1.0 / len(model_paths)
 
-print('y pred shape')
-print(y_pred.shape)
+    y_pred = y_pred >= 0.7
 
-print(y_pred)
+    return y_pred
+
+
+
+# model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
+# y_pred = predict('xgb.model', val_x)
+# model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False)
+# model, model_path = train_nb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
+# model, model_path = train_lr(train_sub_x, train_sub_y, hyperparameter_tuning=False)
+
+
+# y_pred = predict_blend(val_x)
+y_pred = predict_blend(train_sub_x)
+
 
 # --------
 # Feature engineering
@@ -349,11 +389,8 @@ print(y_pred)
 # A coefficient of +1 represents a perfect prediction, 0 an average random prediction and -1 an inverse prediction.
 # The statistic is also known as the phi coefficient. [source: Wikipedia]
 
-y_true = val_y
-print('y true shape')
-print(y_true.shape)
-
-print(y_true)
+# y_true = val_y
+y_true = train_sub_y
 
 score = matthews_corrcoef(y_true, y_pred)
 print(score)
