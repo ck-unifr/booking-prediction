@@ -189,9 +189,70 @@ print(target_user_df.head(5))
 print('ymd (target)')
 print(target_user_df['ymd'].unique())
 
+train_user_id_list = train_user_df['user_id'].unique()
+target_user_id_list = target_user_df['user_id'].unique()
+
+print('\ndifference between train user id and target user id')
+print(set(train_user_id_list) - set(target_user_id_list))
+# this shows that we could not use user id as a feature
+
 
 # print('---------------')
 # print(train_user_df[train_user_df['user_id']==388309106223940])
+
+# Reference
+# https://www.datascience.com/blog/introduction-to-correlation-learn-data-science-tutorials
+print('correlation')
+corr_score = train_user_df['referer_code'].corr(train_user_df['has_booking'])
+print('corr score of referer_code and has_booking {}'.format(corr_score))
+
+corr_score = train_user_df['is_app'].corr(train_user_df['has_booking'])
+print('corr score of is_app and has_booking {}'.format(corr_score))
+
+corr_score = train_user_df['agent_id'].corr(train_user_df['has_booking'])
+print('corr score of agent_id and has_booking {}'.format(corr_score))
+
+corr_score = train_user_df['traffic_type'].corr(train_user_df['has_booking'])
+print('corr score of traffic_type and has_booking {}'.format(corr_score))
+
+corr_score = train_user_df['action_id'].corr(train_user_df['has_booking'])
+print('corr score of action_id and has_booking {}'.format(corr_score))
+
+
+
+def get_nb_bookings_dict(df, column_name):
+    # key: column value  value: number of bookings
+    dict_nb_bookings = dict()
+    referer_code_list = df[column_name].unique()
+    # print('referer code')
+    # print(referer_code_list)
+    for code in referer_code_list:
+        values = train_user_df[train_user_df['referer_code'] == code]['has_booking'].values
+        nb = 0
+        for val in values:
+            if val == 1:
+                nb += 1
+        dict_referer_code[code] = nb
+
+
+# key: referer code, value: number of bookings
+dict_referer_code = dict()
+referer_code_list = train_user_df['referer_code'].unique()
+print('referer code')
+print(referer_code_list)
+for code in referer_code_list:
+    values = train_user_df[train_user_df['referer_code']==code]['has_booking'].values
+    nb = 0
+    for val in values:
+        if val == 1:
+            nb += 1
+    dict_referer_code[code] = nb
+
+for code, nb in dict_referer_code.items():
+    print('referer code {}, #bookings {}'.format(code, nb))
+
+
+dict_is_app = dict()
 
 
 # ----------
@@ -366,7 +427,7 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'],):
 
 
 # y_pred = predict_blend(val_x)
-y_pred = predict_blend(train_sub_x)
+# y_pred = predict_blend(train_sub_x)
 
 
 # --------
@@ -390,9 +451,9 @@ y_pred = predict_blend(train_sub_x)
 # The statistic is also known as the phi coefficient. [source: Wikipedia]
 
 # y_true = val_y
-y_true = train_sub_y
+# y_true = train_sub_y
 
-score = matthews_corrcoef(y_true, y_pred)
-print(score)
+# score = matthews_corrcoef(y_true, y_pred)
+# print(score)
 
 
