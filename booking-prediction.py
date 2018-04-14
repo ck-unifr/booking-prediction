@@ -124,6 +124,8 @@ def get_train_set(df):
 def get_test_set(df):
     test_x = df[feature_columns]
 
+    return test_x
+
 def timer(start_time=None):
     # fork from https://www.kaggle.com/tilii7/hyperparameter-grid-search-with-xgboost
     if not start_time:
