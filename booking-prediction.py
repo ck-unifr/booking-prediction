@@ -192,7 +192,7 @@ def timer(start_time=None):
         print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
 
-def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4, folds=3, param_comb=5):
+def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, param_comb=5):
     """
     Train a xgb model
 
@@ -208,6 +208,8 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
     xgb_clf = XGBClassifier(nthread=n_jobs, objective='binary:logistic', silent=True,)
 
     if hyperparameter_tuning:
+        print('xgb hyperparameter tuning ...')
+
         params = {
             #'n_estimators': [100, 200, 400, 500],
             'min_child_weight': [1, 5, 10],
@@ -381,7 +383,11 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 
 
 model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
-y_pred = predict('xgb.ht.model', val_x)
+y_pred = predict(model_path, val_x)
+
+
+#model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model')
+#y_pred = predict('rf.ht.model', val_x)
 
 # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False)
 # model, model_path = train_nb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
