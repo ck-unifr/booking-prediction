@@ -192,9 +192,10 @@ def timer(start_time=None):
         print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
 
-def train_xgb(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4, folds=3, param_comb=5):
+def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4, folds=3, param_comb=5):
     """
     Train a xgb model
+
     Reference
     https://www.kaggle.com/tilii7/hyperparameter-grid-search-with-xgboost
     """
@@ -246,23 +247,27 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4, folds=3, 
     else:
         xgb_clf.fit(train_sub_x, train_sub_y)
 
-    xgb_model_path = 'xgb.model'
-    if hyperparameter_tuning:
-        xgb_model_path = 'xgb.ht.model'
-    # xgb_clf.save_model(xgb_model_path)
+    if model_path is None:
+        xgb_model_path = 'xgb.model'
+        if hyperparameter_tuning:
+            xgb_model_path = 'xgb.ht.model'
+    else:
+        xgb_model_path = model_path
+        # xgb_clf.save_model(xgb_model_path)
     joblib.dump(xgb_clf, xgb_model_path)
     print('save xgb model to {}'.format(xgb_model_path))
 
     return xgb_clf, xgb_model_path
 
 
-def train_rf(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4):
+def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4):
     model = RandomForestClassifier(max_depth=6, random_state=0, n_jobs=n_jobs)
     model.fit(X_train, Y_train)
 
-    model_path = 'rf.model'
-    if hyperparameter_tuning:
-        model_path = 'rf.ht.model'
+    if model_path is None:
+        model_path = 'rf.model'
+        if hyperparameter_tuning:
+            model_path = 'rf.ht.model'
 
     joblib.dump(model, model_path)
     print('save rf model to {}'.format(model_path))
@@ -270,14 +275,15 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, n_jobs=4):
     return model, model_path
 
 
-def train_nb(X_train, Y_train, hyperparameter_tuning=False):
+def train_nb(X_train, Y_train, hyperparameter_tuning=False, model_path=None):
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
     model = GaussianNB()
     model.fit(X_train, Y_train,)
 
-    model_path = 'gnb.model'
-    if hyperparameter_tuning:
-        model_path = 'gnb.ht.model'
+    if model_path is None:
+        model_path = 'gnb.model'
+        if hyperparameter_tuning:
+            model_path = 'gnb.ht.model'
 
     joblib.dump(model, model_path)
     print('save GaussianNB model to {}'.format(model_path))
@@ -306,7 +312,7 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 
 
 
-model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True)
+model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
 y_pred = predict('xgb.ht.model', val_x)
 
 # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False)
