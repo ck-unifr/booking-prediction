@@ -276,7 +276,7 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
     return xgb_clf, xgb_model_path
 
 
-def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4, folds=3):
+def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3):
     """
     Train a RF classifier
 
@@ -357,7 +357,7 @@ def train_nb(X_train, Y_train, model_path=None):
     model.fit(X_train, Y_train,)
 
     if model_path is None:
-        model_path = 'gnb.model'
+        model_path = 'nb.model'
 
     joblib.dump(model, model_path)
     print('save GaussianNB model to {}'.format(model_path))
@@ -469,7 +469,8 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
         # lightgbm
         model = lgb.Booster(model_file=model_path)
     elif is_catboost:
-        model = catboost.load_model(model_path)
+        model = CatBoostClassifier()
+        model = model.load_model(model_path)
     else:
         # sklearn
         # xgboost
@@ -512,15 +513,20 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
 #y_pred = predict(model_path, val_x, is_lgbm=True)
 
-model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=100)
-y_pred = predict(model_path, val_x, is_catboost=True)
+#model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=100)
+#y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+
+#model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
+#y_pred = predict('rf.model', val_x)
+
+model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
+y_pred = predict('nb.model', val_x)
 
 print(y_pred)
 print(len(y_pred))
 print(type(y_pred))
 
-#model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model')
-#y_pred = predict('rf.ht.model', val_x)
+
 
 # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False)
 # model, model_path = train_nb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
