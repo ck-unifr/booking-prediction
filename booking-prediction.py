@@ -48,7 +48,7 @@ import pandas as pd
 from datetime import datetime
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import matthews_corrcoef
+from sklearn.metrics import matthews_corrcoef, classification_report
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
@@ -56,6 +56,7 @@ from sklearn.externals import joblib
 from sklearn.naive_bayes import GaussianNB
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import linear_model
+from sklearn.metrics import accuracy_score
 
 import xgboost as xgb
 from xgboost import XGBClassifier
@@ -433,7 +434,7 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
 
 
 
-def predict(model_path, X_test, is_lgbm=False, threshold=0.3):
+def predict(model_path, X_test, is_lgbm=False, threshold=0.5):
     """
     load the model and predict unseen data
     """
@@ -456,7 +457,7 @@ def predict(model_path, X_test, is_lgbm=False, threshold=0.3):
         else:
             y_output.append((0))
 
-    return y_output
+    return np.array(y_output)
 
 def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], threshold=0.7):
     y_pred = predict(model_paths[0], X_test)
@@ -476,13 +477,14 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 
 
 
-#model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-#y_pred = predict(model_path, val_x)
+model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+y_pred = predict(model_path, val_x)
 
-model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
-y_pred = predict(model_path, val_x, is_lgbm=True)
+#model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
+#y_pred = predict(model_path, val_x, is_lgbm=True)
 print(y_pred)
 print(len(y_pred))
+print(type(y_pred))
 
 #model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model')
 #y_pred = predict('rf.ht.model', val_x)
@@ -514,15 +516,23 @@ print(len(y_pred))
 # between -1 and +1.
 # A coefficient of +1 represents a perfect prediction, 0 an average random prediction and -1 an inverse prediction.
 # The statistic is also known as the phi coefficient. [source: Wikipedia]
+#
+# https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
+
 
 y_true = val_y
 # y_true = train_sub_y
 
 print(y_true)
 print(len(y_true))
+print(type(y_true))
 
 score = matthews_corrcoef(y_true, y_pred)
 print('matthews corrcoef score')
 print(score)
+
+accuracy = accuracy_score(y_true, y_pred)
+print('accuracy: {}'.format(accuracy))
+print(classification_report(y_true, y_pred))
 
 
