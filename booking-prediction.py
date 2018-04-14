@@ -66,6 +66,7 @@ import lightgbm as lgb
 import catboost
 from catboost import CatBoostClassifier
 
+np.random.seed(42)
 
 # ---
 # Define file paths
@@ -147,13 +148,13 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
     #                     objective='binary:logistic',
     #                     silent=True, nthread=nthread)
 
-    xgb_clf = XGBClassifier(nthread=n_jobs, objective='binary:logistic', silent=True,)
+    xgb_clf = XGBClassifier(n_estimators=100, nthread=n_jobs, objective='binary:logistic', silent=True,)
 
     if hyperparameter_tuning:
         print('xgb hyperparameter tuning ...')
 
         params = {
-            #'n_estimators': [100, 200, 400, 500],
+            'n_estimators': [80, 100, 200, 300],
             'min_child_weight': [1, 5, 10],
             # 'gamma': [0.5, 1, 1.5, 2, 5],
             'gamma': [0.5, 1, 1.5, 2],
@@ -219,7 +220,7 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
     Reference
     https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74
     """
-    model = RandomForestClassifier(random_state=42, n_jobs=n_jobs)
+    model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=n_jobs)
 
     if hyperparameter_tuning:
         # Number of trees in random forest
@@ -288,6 +289,9 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
 
 
 def train_nb(X_train, Y_train, model_path=None):
+    """
+    Train a naive bayes classifier
+    """
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
     model = GaussianNB()
     model.fit(X_train, Y_train,)
