@@ -417,7 +417,6 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
         # xgboost
         model = joblib.load(model_path)
 
-
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
@@ -510,7 +509,7 @@ if __name__ == "__main__":
     #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
     #y_pred = predict('xgb.model', val_x)
 
-    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
     y_pred = predict(model_path, val_x, is_lgbm=True)
 
     #model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
