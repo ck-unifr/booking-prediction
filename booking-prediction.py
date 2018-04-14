@@ -435,7 +435,7 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
         return y_pred
 
 
-def predict_blend(y_pred_list, threshold=0.7):
+def blend_predictions(y_pred_list, threshold=0.7):
     """
     blend the predictions
     """
@@ -505,9 +505,11 @@ if __name__ == "__main__":
     print(test_x.shape)
     # print(test_y.shape)
 
+    y_pred_list = []
 
     model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
     y_pred = predict('xgb.ht.model', val_x)
+    y_pred_list.append(y_pred)
 
     #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
     #y_pred = predict(model_path, val_x, is_lgbm=True)
@@ -521,6 +523,7 @@ if __name__ == "__main__":
     #model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
     #y_pred = predict('nb.model', val_x)
 
+    y_pred = blend_predictions(y_pred_list)
     print(y_pred)
     print(len(y_pred))
     print(type(y_pred))
@@ -583,6 +586,7 @@ if __name__ == "__main__":
 
     accuracy = accuracy_score(y_true, y_pred)
     print('accuracy: {}'.format(accuracy))
+    print('classification report:')
     print(classification_report(y_true, y_pred))
 
 
