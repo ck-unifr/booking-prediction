@@ -63,6 +63,9 @@ from xgboost import XGBClassifier
 
 import lightgbm as lgb
 
+import catboost
+from catboost import CatBoostClassifier
+
 # ---
 # Define file paths
 TRAIN_BOOKING_FILE_PATH = 'data/case_study_bookings_train.csv'    # training sessions for bookings
@@ -432,15 +435,37 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
     return gbm, model_path
 
 
+def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
+               model_path=None, hyperparameter_tuning=False, num_boost_round=100):
+
+    model = CatBoostClassifier(loss_function='Logloss',
+                               iterations=num_boost_round,
+                               #learning_rate=1,
+                               #depth=2
+                               )
+    # Fit model
+    model.fit(X_train, Y_train, categorical_feature)
+
+    if model_path is None:
+        model_path = 'catboost.model'
+        if hyperparameter_tuning:
+            model_path = 'catboost.ht.model'
+
+    model.save_model(model_path)
+
+    return model, model_path
 
 
-def predict(model_path, X_test, is_lgbm=False, threshold=0.5):
+
+def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5):
     """
     load the model and predict unseen data
     """
     if is_lgbm:
         # lightgbm
         model = lgb.Booster(model_file=model_path)
+    elif is_catboost:
+        model = catboost.load_model(model_path)
     else:
         # sklearn
         # xgboost
@@ -477,11 +502,15 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 
 
 
-model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-y_pred = predict(model_path, val_x)
+#model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+#y_pred = predict(model_path, val_x)
 
 #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
 #y_pred = predict(model_path, val_x, is_lgbm=True)
+
+model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=100)
+y_pred = predict(model_path, val_x, is_catboost=True)
+
 print(y_pred)
 print(len(y_pred))
 print(type(y_pred))
