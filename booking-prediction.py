@@ -439,7 +439,6 @@ def blend_predictions(y_pred_list, threshold=0.7):
     """
     blend the predictions
     """
-
     y_pred = y_pred_list[0]
 
     for i in range(1, len(y_pred_list)):
@@ -459,6 +458,7 @@ def blend_predictions(y_pred_list, threshold=0.7):
 
 
 if __name__ == "__main__":
+
     # -------------------
     # Step 1: read and explore the data
     #
@@ -505,23 +505,44 @@ if __name__ == "__main__":
     print(test_x.shape)
     # print(test_y.shape)
 
+
+    # -------------------
+    # Step 2: feature engineering
+    #
+    # category data in machine learning
+    # Reference:
+    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-66041f734512
+    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-42fd0a43b009
+
+
+    # -------------------
+    # Step 3: train model and make predictions
+    #
     y_pred_list = []
 
-    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
-    y_pred = predict('xgb.ht.model', val_x)
+    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
+    # y_pred = predict('xgb.ht.model', val_x)
+    # y_pred_list.append(y_pred)
+
+    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+    y_pred = predict('xgb.model', val_x)
     y_pred_list.append(y_pred)
 
-    #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
-    #y_pred = predict(model_path, val_x, is_lgbm=True)
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=200)
+    y_pred = predict('lgbm.model', val_x, is_lgbm=True)
+    y_pred_list.append(y_pred)
 
-    #model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
-    #y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=200)
+    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    y_pred_list.append(y_pred)
 
-    #model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
-    #y_pred = predict('rf.model', val_x)
+    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
+    y_pred = predict('rf.model', val_x)
+    y_pred_list.append(y_pred)
 
-    #model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
-    #y_pred = predict('nb.model', val_x)
+    model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
+    y_pred = predict('nb.model', val_x)
+    y_pred_list.append(y_pred)
 
     y_pred = blend_predictions(y_pred_list)
     print(y_pred)
@@ -529,26 +550,9 @@ if __name__ == "__main__":
     print(type(y_pred))
 
 
-
-    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False)
-    # model, model_path = train_nb(train_sub_x, train_sub_y, hyperparameter_tuning=False)
-    # model, model_path = train_lr(train_sub_x, train_sub_y, hyperparameter_tuning=False)
-
-
-    # y_pred = predict_blend(val_x)
-    # y_pred = predict_blend(train_sub_x)
-
-
-    # --------
-    # Feature engineering
-    # category data in machine learning
-    # Reference:
-    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-66041f734512
-    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-42fd0a43b009
-
-
-    # ---------
-    # Evaluate the model
+    # -------------------
+    # Step 4: evaluate the model
+    #
     # We expect binary predictions for the target sessions, which will be evaluated by Matthews Correlation Coefficient (MCC)
     # using the ground truth dataset on our side.
     # The Matthews correlation coefficient is used in machine learning as a measure of the quality of binary (two-class) classifications.
@@ -559,7 +563,6 @@ if __name__ == "__main__":
     # The statistic is also known as the phi coefficient. [source: Wikipedia]
     #
     # https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
-
 
     y_true = val_y
     # y_true = train_sub_y
