@@ -404,6 +404,8 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
     # save model to file
     gbm.save_model(model_path)
 
+    print('save lightGBM model to {}'.format(model_path))
+
     # load model to predict
     #print('Load model to predict')
     #bst = lgb.Booster(model_file='model.txt')
@@ -452,6 +454,8 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
             model_path = 'catboost.ht.model'
 
     model.save_model(model_path)
+
+    print('save catboost model to {}'.format(model_path))
 
     return model, model_path
 
