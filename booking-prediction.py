@@ -90,12 +90,12 @@ def preprocessing(df):
     df['reference'].fillna(NA_REFERENCE_ID, inplace=True)
     df['step'].fillna(NA_STEP, inplace=True)
 
-    df['referer_code'] = df['referer_code'].astype('str')
-    df['is_app'] = df['is_app'].astype('str')
-    df['agent_id'] = df['agent_id'].astype('str')
-    df['traffic_type'] = df['traffic_type'].astype('str')
-    df['action_id'] = df['action_id'].astype('str')
-    df['reference'] = df['reference'].astype('str')
+    df['referer_code'] = df['referer_code'].astype('int')
+    df['is_app'] = df['is_app'].astype('int')
+    df['agent_id'] = df['agent_id'].astype('int')
+    df['traffic_type'] = df['traffic_type'].astype('int')
+    df['action_id'] = df['action_id'].astype('int')
+    df['reference'] = df['reference'].astype('int')
     df['step'] = df['step'].astype('int')
 
     if 'has_booking' in df.columns:
@@ -508,11 +508,11 @@ if __name__ == "__main__":
     # print(test_y.shape)
 
 
-    #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-    #y_pred = predict('xgb.model', val_x)
+    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+    y_pred = predict('xgb.model', val_x)
 
-    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
-    y_pred = predict(model_path, val_x, is_lgbm=True)
+    #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
+    #y_pred = predict(model_path, val_x, is_lgbm=True)
 
     #model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
     #y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
