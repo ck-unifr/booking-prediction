@@ -365,7 +365,7 @@ def train_nb(X_train, Y_train, model_path=None):
     return model, model_path
 
 
-def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
+def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
                model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100):
     """
     Train a lightGBM model
@@ -437,7 +437,7 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
     return gbm, model_path
 
 
-def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
+def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
                model_path=None, hyperparameter_tuning=False, num_boost_round=100):
 
     model = CatBoostClassifier(loss_function='Logloss',
@@ -480,12 +480,13 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
-    y_output = []
-    for y in y_pred:
-        if y > threshold:
-            y_output.append(1)
-        else:
-            y_output.append((0))
+    y_output = y_pred
+    # y_output = []
+    # for y in y_pred:
+    #     if y > threshold:
+    #         y_output.append(1)
+    #     else:
+    #         y_output.append((0))
 
     return np.array(y_output)
 
@@ -508,7 +509,7 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 
 
 #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-#y_pred = predict(model_path, val_x)
+#y_pred = predict('xgb.model', val_x)
 
 #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
 #y_pred = predict(model_path, val_x, is_lgbm=True)
@@ -519,7 +520,7 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
 #model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
 #y_pred = predict('rf.model', val_x)
 
-model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
+#model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
 y_pred = predict('nb.model', val_x)
 
 print(y_pred)
@@ -566,9 +567,8 @@ print(y_true)
 print(len(y_true))
 print(type(y_true))
 
-score = matthews_corrcoef(y_true, y_pred)
-print('matthews corrcoef score')
-print(score)
+mcc_score = matthews_corrcoef(y_true, y_pred)
+print('matthews corrcoef score {}'.format(mcc_score))
 
 accuracy = accuracy_score(y_true, y_pred)
 print('accuracy: {}'.format(accuracy))
