@@ -209,14 +209,14 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
 
     if hyperparameter_tuning:
         params = {
-            'n_estimators': [100, 200, 400, 500],
+            #'n_estimators': [100, 200, 400, 500],
             'min_child_weight': [1, 5, 10],
             # 'gamma': [0.5, 1, 1.5, 2, 5],
-            'gamma': [0.5, 1, 1.5],
+            'gamma': [0.5, 1, 1.5, 2],
             # 'subsample': [0.6, 0.8, 1.0],
-            'subsample': [0.6, 0.8],
+            'subsample': [0.6, 0.8, 1],
             # 'colsample_bytree': [0.6, 0.8, 1.0],
-            'colsample_bytree': [0.6, 0.8],
+            'colsample_bytree': [0.6, 0.8, 1],
             # 'max_depth': [3, 4, 5]
             'max_depth': [2, 4, 6],
         }
@@ -232,18 +232,26 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
         random_search.fit(X_train, Y_train)
         timer(start_time)
 
-        print('\n All results:')
+        print('--------------')
+        print('\n all results:')
         print(random_search.cv_results_)
-        print('\n Best estimator:')
-        print(random_search.best_estimator_)
-        print('\n Best normalized gini score for %d-fold search with %d parameter combinations:' % (folds, param_comb))
-        print(random_search.best_score_ * 2 - 1)
-        print('\n Best hyperparameters:')
-        print(random_search.best_params_)
-        results = pd.DataFrame(random_search.cv_results_)
-        results.to_csv('xgb-random-grid-search-results-01.csv', index=False)
 
-        xgb_clf = random_search
+        print('\n best estimator:')
+        print(random_search.best_estimator_)
+
+        print('\n best normalized gini score for %d-fold search with %d parameter combinations:' % (folds, param_comb))
+        print(random_search.best_score_ * 2 - 1)
+
+        print('\n best xgb hyperparameters:')
+        print(random_search.best_params_)
+
+        result_csv_path = 'xgb-random-grid-search-results.csv'
+        results = pd.DataFrame(random_search.cv_results_)
+        results.to_csv(result_csv_path, index=False)
+        print('save xgb random search results to {}'.format(result_csv_path))
+        print('--------------')
+
+        xgb_clf = random_search.best_estimator_
     else:
         xgb_clf.fit(train_sub_x, train_sub_y)
 
@@ -260,14 +268,74 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
     return xgb_clf, xgb_model_path
 
 
-def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4):
-    model = RandomForestClassifier(max_depth=6, random_state=0, n_jobs=n_jobs)
-    model.fit(X_train, Y_train)
+def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=4, folds=3):
+    """
+    Train a RF classifier
+
+    Reference
+    https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74
+    """
+    model = RandomForestClassifier(random_state=42, n_jobs=n_jobs)
+
+    if hyperparameter_tuning:
+        # Number of trees in random forest
+        #n_estimators = [int(x) for x in np.linspace(start=200, stop=2000, num=10)]
+        n_estimators = [60, 100, 200, 300]
+        # Number of features to consider at every split
+        max_features = ['auto', 'sqrt']
+        # Maximum number of levels in tree
+        #max_depth = [int(x) for x in np.linspace(10, 110, num=11)]
+        max_depth = [4, 6, 8]
+        max_depth.append(None)
+        # Minimum number of samples required to split a node
+        min_samples_split = [2, 5, 10]
+        # Minimum number of samples required at each leaf node
+        min_samples_leaf = [1, 2, 4]
+        # Method of selecting samples for training each tree
+        bootstrap = [True, False]
+        # Create the random grid
+        random_grid = {'n_estimators': n_estimators,
+                       'max_features': max_features,
+                       'max_depth': max_depth,
+                       'min_samples_split': min_samples_split,
+                       'min_samples_leaf': min_samples_leaf,
+                       'bootstrap': bootstrap}
+        #print(random_grid)
+
+        rf_random = RandomizedSearchCV(estimator=model, param_distributions=random_grid,
+                                       n_iter=100, cv=folds, verbose=2, random_state=42, n_jobs=n_jobs)
+
+        rf_random.fit(X_train, X_train)
+
+
+        print('--------------')
+        print('\n all results:')
+        print(rf_random.cv_results_)
+
+        print('\n best estimator:')
+        print(rf_random.best_estimator_)
+
+        print('\n best rf parameters:')
+        print(rf_random.best_params_)
+
+        print('\n best scores:')
+        rf_random.best_score_
+
+        result_cv_path = 'rf-random-grid-search-results.csv'
+        results = pd.DataFrame(rf_random.cv_results_)
+        results.to_csv(result_cv_path, index=False)
+        print('\n save rf random search results to {}'.format(result_cv_path))
+        print('--------------')
+
+        model = rf_random.best_estimator_
+    else:
+        model.fit(X_train, Y_train)
 
     if model_path is None:
         model_path = 'rf.model'
         if hyperparameter_tuning:
             model_path = 'rf.ht.model'
+
 
     joblib.dump(model, model_path)
     print('save rf model to {}'.format(model_path))
