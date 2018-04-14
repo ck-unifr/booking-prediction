@@ -506,11 +506,11 @@ if __name__ == "__main__":
     # print(test_y.shape)
 
 
-    #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-    #y_pred = predict('xgb.model', val_x)
+    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
+    y_pred = predict('xgb.ht.model', val_x)
 
-    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
-    y_pred = predict(model_path, val_x, is_lgbm=True)
+    #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
+    #y_pred = predict(model_path, val_x, is_lgbm=True)
 
     #model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
     #y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
