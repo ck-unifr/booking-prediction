@@ -60,6 +60,8 @@ from sklearn import linear_model
 import xgboost as xgb
 from xgboost import XGBClassifier
 
+import lightgbm as lgb
+
 # ---
 # Define file paths
 TRAIN_BOOKING_FILE_PATH = 'data/case_study_bookings_train.csv'    # training sessions for bookings
@@ -345,29 +347,116 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
     return model, model_path
 
 
-def train_nb(X_train, Y_train, hyperparameter_tuning=False, model_path=None):
+def train_nb(X_train, Y_train, model_path=None):
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
     model = GaussianNB()
     model.fit(X_train, Y_train,)
 
     if model_path is None:
         model_path = 'gnb.model'
-        if hyperparameter_tuning:
-            model_path = 'gnb.ht.model'
 
     joblib.dump(model, model_path)
     print('save GaussianNB model to {}'.format(model_path))
 
     return model, model_path
 
-def predict(model_path, X_test):
+
+def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5, 6],
+               model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100):
+    """
+    Train a lightGBM model
+
+    Reference
+    https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py
+    """
+    d_train = lgb.Dataset(X_train, label=Y_train,
+                          # categorical_feature=['aisle_id', 'department_id']
+                          categorical_feature=categorical_feature,
+                          )
+
+    params = {
+        'boosting_type': 'gbdt',
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'n_jobs': n_jobs,
+        #'num_leaves': 31,
+        #'learning_rate': 0.05,
+        #'feature_fraction': 0.9,
+        #'bagging_fraction': 0.8,
+        #'bagging_freq': 5,
+        #'verbose': 0
+    }
+
+    gbm = lgb.train(params,
+                    d_train,
+                    num_boost_round=num_boost_round,
+                    categorical_feature=categorical_feature)
+
+    if model_path is None:
+        model_path = 'lgbm.model'
+        if hyperparameter_tuning:
+            model_path = 'lgbm.ht.model'
+
+    # save model to file
+    gbm.save_model(model_path)
+
+    # load model to predict
+    #print('Load model to predict')
+    #bst = lgb.Booster(model_file='model.txt')
+    # can only predict with the best iteration (or the saving iteration)
+    #y_pred = bst.predict(X_test)
+
+    #TODO: hyperparameter tuning
+    # if hyperparameter_tuning:
+    #     params = {'boosting_type': 'gbdt',
+    #               'max_depth': -1,
+    #               'objective': 'binary',
+    #               'nthread': 5,  # Updated from nthread
+    #               'num_leaves': 64,
+    #               'learning_rate': 0.05,
+    #               'max_bin': 512,
+    #               'subsample_for_bin': 200,
+    #               'subsample': 1,
+    #               'subsample_freq': 1,
+    #               'colsample_bytree': 0.8,
+    #               'reg_alpha': 5,
+    #               'reg_lambda': 10,
+    #               'min_split_gain': 0.5,
+    #               'min_child_weight': 1,
+    #               'min_child_samples': 5,
+    #               'scale_pos_weight': 1,
+    #               'num_class': 1,
+    #               'metric': 'binary_error'}
+
+    return gbm, model_path
+
+
+
+
+def predict(model_path, X_test, is_lgbm=False, threshold=0.3):
     """
     load the model and predict unseen data
     """
-    model = joblib.load(model_path)
+    if is_lgbm:
+        # lightgbm
+        model = lgb.Booster(model_file=model_path)
+    else:
+        # sklearn
+        # xgboost
+        model = joblib.load(model_path)
+
+
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
-    return y_pred
+
+    y_output = []
+    for y in y_pred:
+        if y > threshold:
+            y_output.append(1)
+        else:
+            y_output.append((0))
+
+    return y_output
 
 def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], threshold=0.7):
     y_pred = predict(model_paths[0], X_test)
@@ -376,15 +465,24 @@ def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], thr
         y_pred += predict(model_paths[0], X_test)
     y_pred = y_pred*1.0 / len(model_paths)
 
-    y_pred = y_pred >= threshold
+    y_output = []
+    for y in y_pred:
+        if y > threshold:
+            y_output.append(1)
+        else:
+            y_output.append((0))
 
-    return y_pred
+    return y_output
 
 
 
-model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
-y_pred = predict(model_path, val_x)
+#model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+#y_pred = predict(model_path, val_x)
 
+model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=100)
+y_pred = predict(model_path, val_x, is_lgbm=True)
+print(y_pred)
+print(len(y_pred))
 
 #model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model')
 #y_pred = predict('rf.ht.model', val_x)
@@ -420,7 +518,11 @@ y_pred = predict(model_path, val_x)
 y_true = val_y
 # y_true = train_sub_y
 
+print(y_true)
+print(len(y_true))
+
 score = matthews_corrcoef(y_true, y_pred)
+print('matthews corrcoef score')
 print(score)
 
 
