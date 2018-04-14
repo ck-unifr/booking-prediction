@@ -91,7 +91,7 @@ def preprocessing(df):
     df['step'].fillna(NA_STEP, inplace=True)
 
     df['referer_code'] = df['referer_code'].astype('str')
-    df['is_app'] = df['is_app'].astype('int')
+    df['is_app'] = df['is_app'].astype('str')
     df['agent_id'] = df['agent_id'].astype('str')
     df['traffic_type'] = df['traffic_type'].astype('str')
     df['action_id'] = df['action_id'].astype('str')
@@ -208,7 +208,7 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
         xgb_model_path = model_path
         # xgb_clf.save_model(xgb_model_path)
     joblib.dump(xgb_clf, xgb_model_path)
-    print('save xgb model to {}'.format(xgb_model_path))
+    print('save the xgb model to {}'.format(xgb_model_path))
 
     return xgb_clf, xgb_model_path
 
@@ -283,7 +283,7 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
 
 
     joblib.dump(model, model_path)
-    print('save rf model to {}'.format(model_path))
+    print('save the rf model to {}'.format(model_path))
 
     return model, model_path
 
@@ -300,7 +300,7 @@ def train_nb(X_train, Y_train, model_path=None):
         model_path = 'nb.model'
 
     joblib.dump(model, model_path)
-    print('save GaussianNB model to {}'.format(model_path))
+    print('save the GaussianNB model to {}'.format(model_path))
 
     return model, model_path
 
@@ -344,7 +344,7 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
     # save model to file
     gbm.save_model(model_path)
 
-    print('save lightGBM model to {}'.format(model_path))
+    print('save the lightGBM model to {}'.format(model_path))
 
     # load model to predict
     #print('Load model to predict')
@@ -378,14 +378,15 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
 
 def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
-               model_path=None, hyperparameter_tuning=False, num_boost_round=10):
-
+               model_path=None, hyperparameter_tuning=False, num_boost_round=100):
+    """
+    train a catboost model
+    """
     model = CatBoostClassifier(loss_function='Logloss',
                                iterations=num_boost_round,
                                #learning_rate=1,
                                #depth=2
                                )
-    # Fit model
     model.fit(X_train, Y_train, categorical_feature)
 
     if model_path is None:
@@ -395,7 +396,7 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
     model.save_model(model_path)
 
-    print('save catboost model to {}'.format(model_path))
+    print('save the catboost model to {}'.format(model_path))
 
     return model, model_path
 
@@ -420,7 +421,34 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
-    #y_output = y_pred
+    return y_pred
+
+    # if not is_lgbm:
+    #     return y_pred
+    # else:
+    #     #y_output = y_pred
+    #     y_output = []
+    #     for y in y_pred:
+    #         if y > threshold:
+    #             y_output.append(1)
+    #         else:
+    #             y_output.append(0)
+    #
+    #     return np.array(y_output)
+
+def predict_blend(y_pred_list, threshold=0.7):
+    """
+    blend the predictions
+    """
+
+    y_pred = y_pred_list[0]
+
+    for i in range(1, len(y_pred_list)):
+        for j in range(len(y_pred)):
+            y_pred[j] += y_pred_list[i][j]
+
+    y_pred = y_pred*1.0 / len(y_pred_list)
+
     y_output = []
     for y in y_pred:
         if y > threshold:
@@ -429,22 +457,6 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
             y_output.append(0)
 
     return np.array(y_output)
-
-def predict_blend(X_test, model_paths=['xgb.model', 'rf.model', 'nb.model'], threshold=0.7):
-    y_pred = predict(model_paths[0], X_test)
-
-    for i in range(1, len(model_paths)):
-        y_pred += predict(model_paths[0], X_test)
-    y_pred = y_pred*1.0 / len(model_paths)
-
-    y_output = []
-    for y in y_pred:
-        if y > threshold:
-            y_output.append(1)
-        else:
-            y_output.append(0)
-
-    return y_output
 
 
 if __name__ == "__main__":
