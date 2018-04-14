@@ -422,20 +422,18 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
-    return y_pred
+    if is_lgbm:
+        y_output = []
+        for y in y_pred:
+            if y > threshold:
+                y_output.append(1)
+            else:
+                y_output.append(0)
 
-    # if not is_lgbm:
-    #     return y_pred
-    # else:
-    #     #y_output = y_pred
-    #     y_output = []
-    #     for y in y_pred:
-    #         if y > threshold:
-    #             y_output.append(1)
-    #         else:
-    #             y_output.append(0)
-    #
-    #     return np.array(y_output)
+        return np.array(y_output)
+    else:
+        return y_pred
+
 
 def predict_blend(y_pred_list, threshold=0.7):
     """
@@ -508,11 +506,11 @@ if __name__ == "__main__":
     # print(test_y.shape)
 
 
-    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-    y_pred = predict('xgb.model', val_x)
+    #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+    #y_pred = predict('xgb.model', val_x)
 
-    #model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
-    #y_pred = predict(model_path, val_x, is_lgbm=True)
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=10)
+    y_pred = predict(model_path, val_x, is_lgbm=True)
 
     #model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
     #y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
