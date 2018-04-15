@@ -511,6 +511,11 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
+    # print('==')
+    # for y in y_pred:
+    #     if y == 1:
+    #         print('1')
+
     if is_lgbm:
         return np.array([np.argmax(y) for y in y_pred])
     else:
@@ -631,9 +636,9 @@ if __name__ == "__main__":
     #
     y_pred_list = []
 
-    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
-    y_pred = predict('xgb.ht.model', val_x)
-    y_pred_list.append(y_pred)
+    #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
+    #y_pred = predict('xgb.ht.model', val_x)
+    #y_pred_list.append(y_pred)
 
     # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
     # y_pred = predict('xgb.model', val_x)
@@ -643,14 +648,36 @@ if __name__ == "__main__":
     # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
     # y_pred_list.append(y_pred)
 
-    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=200)
-    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-    # y_pred_list.append(y_pred)
-    #
+    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=5)
+    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+
+    nb_1_pred = 0
+    for y in y_pred:
+        if y == 1:
+            nb_1_pred += 1
+    print('number of bookings in pred'.format(nb_1_pred))
+
+    nb_1_val = 0
+    for y in val_y:
+        if y == 1:
+            nb_1_val += 1
+    print('number of bookings in val'.format(nb_1_val))
+
+    nb_1_train = 0
+    for y in val_y:
+        if y == 1:
+            nb_1_train += 1
+    print('number of bookings in train'.format(nb_1_train))
+
+    evaluate(val_y, y_pred)
+
+    y_pred_list.append(y_pred)
+
+
     # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
     # y_pred = predict('rf.model', val_x)
     # y_pred_list.append(y_pred)
-    #
+
     # model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
     # y_pred = predict('nb.model', val_x)
     # y_pred_list.append(y_pred)
@@ -675,12 +702,12 @@ if __name__ == "__main__":
     #
     # https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
 
-    y_true = val_y
-    # y_true = train_sub_y
-
-    print(y_true)
-    print(len(y_true))
-    print(type(y_true))
-
-    evaluate(y_true, y_pred)
+    # y_true = val_y
+    # # y_true = train_sub_y
+    #
+    # print(y_true)
+    # print(len(y_true))
+    # print(type(y_true))
+    #
+    # evaluate(y_true, y_pred)
 
