@@ -416,21 +416,28 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
         # using parameters already set above, replace in the best from the grid search
         params['colsample_bytree'] = grid.best_params_['colsample_bytree']
         params['learning_rate'] = grid.best_params_['learning_rate']
-        params['max_bin'] = grid.best_params_['max_bin']
+        #params['max_bin'] = grid.best_params_['max_bin']
         params['num_leaves'] = grid.best_params_['num_leaves']
         params['reg_alpha'] = grid.best_params_['reg_alpha']
         params['reg_lambda'] = grid.best_params_['reg_lambda']
         params['subsample'] = grid.best_params_['subsample']
-        params['subsample_for_bin'] = grid.best_params_['subsample_for_bin']
+        #params['subsample_for_bin'] = grid.best_params_['subsample_for_bin']
 
         print('Fitting with params: ')
         print(params)
 
+        X_train_sub, X_val, Y_train_sub, Y_val = train_test_split(X_train, Y_train, test_size=0.1, random_state=42)
+
+        d_train_sub = lgb.Dataset(X_train_sub, label=Y_train_sub,
+                              # categorical_feature=['aisle_id', 'department_id']
+                              categorical_feature=categorical_feature,
+                              )
+
         gbm = lgb.train(params,
-                        X_train,
+                        d_train_sub,
                         1000,
-                        #valid_sets=[trainDataL, validDataL],
-                        #early_stopping_rounds=50,
+                        valid_sets=[X_val, Y_val],
+                        early_stopping_rounds=50,
                         verbose_eval=4)
 
         # Plot importance
@@ -523,6 +530,34 @@ def blend_predictions(y_pred_list, threshold=0.7):
             y_output.append(0)
 
     return np.array(y_output)
+
+
+def evaluate(y_true, y_pred):
+    """
+    evaluate the prediction
+    """
+    mcc_score = matthews_corrcoef(y_true, y_pred)
+    print('matthews corrcoef score {}'.format(mcc_score))
+
+    """
+      tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+      print(tn)
+      print(fp)
+      print(fn)
+      print(tp)
+      print('---')
+
+      mcc = (tp*tn - fp*fn) / np.math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+      print(mcc)
+      print(matthews_corrcoef(y_true, y_pred))
+      """
+
+    accuracy = accuracy_score(y_true, y_pred)
+    print('accuracy: {}'.format(accuracy))
+    print('classification report:')
+    print(classification_report(y_true, y_pred))
+
+    return mcc_score, accuracy
 
 
 if __name__ == "__main__":
@@ -640,25 +675,5 @@ if __name__ == "__main__":
     print(len(y_true))
     print(type(y_true))
 
-    """
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    print(tn)
-    print(fp)
-    print(fn)
-    print(tp)
-    print('---')
-    
-    mcc = (tp*tn - fp*fn) / np.math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-    print(mcc)
-    print(matthews_corrcoef(y_true, y_pred))
-    """
-
-    mcc_score = matthews_corrcoef(y_true, y_pred)
-    print('matthews corrcoef score {}'.format(mcc_score))
-
-    accuracy = accuracy_score(y_true, y_pred)
-    print('accuracy: {}'.format(accuracy))
-    print('classification report:')
-    print(classification_report(y_true, y_pred))
-
+    evaluate(y_true, y_pred)
 
