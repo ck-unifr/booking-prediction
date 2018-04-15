@@ -689,10 +689,10 @@ if __name__ == "__main__":
     #y_pred = predict('xgb.ht.model', val_x)
     #y_pred_list.append(y_pred)
 
-    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=100)
-    # y_pred = predict('xgb.model', val_x)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
+    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=200)
+    y_pred = predict('xgb.model', val_x)
+    evaluate(val_y, y_pred)
+    y_pred_list.append(y_pred)
 
     # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
     #                                num_boost_round=10)
@@ -710,10 +710,10 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
-    y_pred = predict('rf.model', val_x)
-    evaluate(val_y, y_pred)
-    y_pred_list.append(y_pred)
+    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
+    # y_pred = predict('rf.model', val_x)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
 
     # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model',
     #                              n_estimators=100)
@@ -723,6 +723,7 @@ if __name__ == "__main__":
 
     # model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
     # y_pred = predict('nb.model', val_x)
+    # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
     y_pred = blend_predictions(y_pred_list)
