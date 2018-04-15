@@ -39,6 +39,7 @@
 
 import warnings
 warnings.filterwarnings('ignore')
+warnings.simplefilter("ignore", DeprecationWarning)
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
@@ -198,7 +199,8 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
         print('save xgb random search results to {}'.format(result_csv_path))
         print('--------------')
 
-        xgb_clf = random_search.best_estimator_
+        xgb_clf = random_search
+        #xgb_clf = random_search.best_estimator_
     else:
         xgb_clf.fit(train_sub_x, train_sub_y)
 
@@ -308,7 +310,7 @@ def train_nb(X_train, Y_train, model_path=None):
 
 
 def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
-               model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100):
+               model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100, folds=3):
     """
     Train a lightGBM model
 
@@ -321,26 +323,115 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
                           categorical_feature=categorical_feature,
                           )
 
-    params = {
-        'boosting_type': 'gbdt',
-        'objective': 'binary',
-        'num_class': 1,                # must be 1 for non-multiclass training
-        'metric': 'binary_error',
-        #'metric': 'binary_logloss',
-        #'n_jobs': n_jobs,
-        'nthread': n_jobs,
-        #'num_leaves': 31,
-        #'learning_rate': 0.05,
-        #'feature_fraction': 0.9,
-        #'bagging_fraction': 0.8,
-        #'bagging_freq': 5,
-        #'verbose': 0
-    }
 
-    gbm = lgb.train(params,
-                    d_train,
-                    num_boost_round=num_boost_round,
-                    categorical_feature=categorical_feature)
+    if not hyperparameter_tuning:
+        params = {
+            'boosting_type': 'gbdt',
+            'objective': 'binary',
+            'num_class': 1,                # must be 1 for non-multiclass training
+            'metric': 'binary_error',
+            #'metric': 'binary_logloss',
+            #'n_jobs': n_jobs,
+            'nthread': n_jobs,
+            #'num_leaves': 31,
+            'num_leaves': 64,
+            'min_child_weight': 1,
+            'min_child_samples': 5,
+            'scale_pos_weight': 1,
+            'reg_alpha': 5,
+            'learning_rate': 0.05,
+            'max_bin': 512,
+            #'feature_fraction': 0.9,
+            #'bagging_fraction': 0.8,
+            #'bagging_freq': 5,
+            #'verbose': 0
+        }
+
+        gbm = lgb.train(params,
+                        d_train,
+                        num_boost_round=num_boost_round,
+                        categorical_feature=categorical_feature)
+
+    else:
+        params = {'boosting_type': 'gbdt',
+                  'max_depth': -1,
+                  'objective': 'binary',
+                  'nthread': n_jobs,  # Updated from nthread
+                  'num_leaves': 64,
+                  'learning_rate': 0.05,
+                  'max_bin': 512,
+                  'subsample_for_bin': 200,
+                  'subsample': 1,
+                  'subsample_freq': 1,
+                  'colsample_bytree': 0.8,
+                  'reg_alpha': 5,
+                  'reg_lambda': 10,
+                  'min_split_gain': 0.5,
+                  'min_child_weight': 1,
+                  'min_child_samples': 5,
+                  'scale_pos_weight': 1,
+                  'num_class': 1,
+                  'metric': 'binary_error'}
+
+        gridParams = {
+            'learning_rate': [0.005],
+            'n_estimators': [8, 16, 24],
+            'num_leaves': [6, 8, 12, 16],
+            'boosting_type': ['gbdt'],
+            'objective': ['binary'],
+            'random_state': [42],  # Updated from 'seed'
+            'colsample_bytree': [0.64, 0.65, 0.66],
+            'subsample': [0.7, 0.75],
+            'reg_alpha': [1, 1.2],
+            'reg_lambda': [1, 1.2, 1.4],
+        }
+
+        mdl = lgb.LGBMClassifier(boosting_type='gbdt',
+                                 objective='binary',
+                                 n_jobs=n_jobs,  # Updated from 'nthread'
+                                 silent=True,
+                                 max_depth=params['max_depth'],
+                                 max_bin=params['max_bin'],
+                                 subsample_for_bin=params['subsample_for_bin'],
+                                 subsample=params['subsample'],
+                                 subsample_freq=params['subsample_freq'],
+                                 min_split_gain=params['min_split_gain'],
+                                 min_child_weight=params['min_child_weight'],
+                                 min_child_samples=params['min_child_samples'],
+                                 scale_pos_weight=params['scale_pos_weight'])
+
+        print(mdl.get_params().keys())
+
+        grid = GridSearchCV(mdl, gridParams, verbose=1, cv=folds, n_jobs=n_jobs)
+        grid.fit(X_train, Y_train)
+
+        print('best parameters:')
+        print(grid.best_params_)
+        print('best score: ')
+        print(grid.best_score_)
+
+        # using parameters already set above, replace in the best from the grid search
+        params['colsample_bytree'] = grid.best_params_['colsample_bytree']
+        params['learning_rate'] = grid.best_params_['learning_rate']
+        params['max_bin'] = grid.best_params_['max_bin']
+        params['num_leaves'] = grid.best_params_['num_leaves']
+        params['reg_alpha'] = grid.best_params_['reg_alpha']
+        params['reg_lambda'] = grid.best_params_['reg_lambda']
+        params['subsample'] = grid.best_params_['subsample']
+        params['subsample_for_bin'] = grid.best_params_['subsample_for_bin']
+
+        print('Fitting with params: ')
+        print(params)
+
+        gbm = lgb.train(params,
+                        X_train,
+                        1000,
+                        #valid_sets=[trainDataL, validDataL],
+                        #early_stopping_rounds=50,
+                        verbose_eval=4)
+
+        # Plot importance
+        #lgb.plot_importance(gbm)
 
     if model_path is None:
         model_path = 'lgbm.model'
@@ -349,36 +440,13 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
     # save model to file
     gbm.save_model(model_path)
-
     print('save the lightGBM model to {}'.format(model_path))
 
     # load model to predict
-    #print('Load model to predict')
-    #bst = lgb.Booster(model_file='model.txt')
+    # print('Load model to predict')
+    # bst = lgb.Booster(model_file='model.txt')
     # can only predict with the best iteration (or the saving iteration)
-    #y_pred = bst.predict(X_test)
-
-    #TODO: hyperparameter tuning
-    # if hyperparameter_tuning:
-    #     params = {'boosting_type': 'gbdt',
-    #               'max_depth': -1,
-    #               'objective': 'binary',
-    #               'nthread': 5,  # Updated from nthread
-    #               'num_leaves': 64,
-    #               'learning_rate': 0.05,
-    #               'max_bin': 512,
-    #               'subsample_for_bin': 200,
-    #               'subsample': 1,
-    #               'subsample_freq': 1,
-    #               'colsample_bytree': 0.8,
-    #               'reg_alpha': 5,
-    #               'reg_lambda': 10,
-    #               'min_split_gain': 0.5,
-    #               'min_child_weight': 1,
-    #               'min_child_samples': 5,
-    #               'scale_pos_weight': 1,
-    #               'num_class': 1,
-    #               'metric': 'binary_error'}
+    # y_pred = bst.predict(X_test)
 
     return gbm, model_path
 
@@ -526,9 +594,9 @@ if __name__ == "__main__":
     # y_pred = predict('xgb.model', val_x)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=200)
-    y_pred = predict('lgbm.model', val_x, is_lgbm=True)
-    #y_pred_list.append(y_pred)
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=100)
+    y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
+    y_pred_list.append(y_pred)
 
     # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=200)
     # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
@@ -542,7 +610,7 @@ if __name__ == "__main__":
     # y_pred = predict('nb.model', val_x)
     # y_pred_list.append(y_pred)
 
-    #y_pred = blend_predictions(y_pred_list)
+    y_pred = blend_predictions(y_pred_list)
     print(y_pred)
     print(len(y_pred))
     print(type(y_pred))
