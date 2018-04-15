@@ -106,7 +106,7 @@ def preprocessing(df):
 
     return df
 
-def get_train_set(df):
+def get_train_set(df, feature_columns):
     print('\n === get train set === \n')
 
     train_df = df[feature_columns + target_column]
@@ -126,7 +126,7 @@ def get_train_set(df):
 
     return train_x, train_y
 
-def get_test_set(df):
+def get_test_set(df, feature_columns):
     print('\n === get test set === \n')
 
     test_x = df[feature_columns]
@@ -649,7 +649,7 @@ if __name__ == "__main__":
     # shuffle
     #train_data_df = train_data_df.reindex(np.random.permutation(train_data_df.index))
 
-    train_x, train_y = get_train_set(train_user_df)
+    train_x, train_y = get_train_set(train_user_df, feature_columns)
     print('\n -----')
     print('train set size:')
     print(train_x.shape)
@@ -657,7 +657,7 @@ if __name__ == "__main__":
 
     train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
 
-    test_x = get_test_set(target_user_df)
+    test_x = get_test_set(target_user_df, feature_columns)
     print('\n -----')
     print('test set size:')
     print(test_x.shape)
@@ -699,13 +699,20 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=2)
-    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=2)
+    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
+
+    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=100)
+    y_pred = predict('rf.model', val_x)
     evaluate(val_y, y_pred)
     y_pred_list.append(y_pred)
 
-    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
-    # y_pred = predict('rf.model', val_x)
+    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model',
+    #                              n_estimators=100)
+    # y_pred = predict('rf.ht.model', val_x)
+    # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
     # model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
