@@ -431,12 +431,19 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
         d_train_sub = lgb.Dataset(X_train_sub, label=Y_train_sub,
                               # categorical_feature=['aisle_id', 'department_id']
                               categorical_feature=categorical_feature,
+                              #categorical_feature='auto'
+                              )
+
+        d_val_sub = lgb.Dataset(X_val, label=Y_val,
+                              # categorical_feature=['aisle_id', 'department_id']
+                              categorical_feature=categorical_feature,
+                              #categorical_feature='auto'
                               )
 
         gbm = lgb.train(params,
                         d_train_sub,
-                        1000,
-                        valid_sets=[X_val, Y_val],
+                        num_boost_round=1000,
+                        valid_sets=[d_train_sub, d_val_sub],
                         early_stopping_rounds=50,
                         verbose_eval=4)
 
