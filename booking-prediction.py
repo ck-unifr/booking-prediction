@@ -87,6 +87,8 @@ target_column = ['has_booking']
 
 
 def preprocessing(df):
+    print('\n === preprocess data === \n')
+
     df['action_id'].fillna(NA_ACTION_ID, inplace=True)
     df['reference'].fillna(NA_REFERENCE_ID, inplace=True)
     df['step'].fillna(NA_STEP, inplace=True)
@@ -105,6 +107,8 @@ def preprocessing(df):
     return df
 
 def get_train_set(df):
+    print('\n === get train set === \n')
+
     train_df = df[feature_columns + target_column]
 
     train_x = train_df[feature_columns]
@@ -123,6 +127,8 @@ def get_train_set(df):
     return train_x, train_y
 
 def get_test_set(df):
+    print('\n === get test set === \n')
+
     test_x = df[feature_columns]
 
     return test_x
@@ -138,7 +144,7 @@ def timer(start_time=None):
         print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
 
-def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, param_comb=5):
+def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, param_comb=5, n_estimators=100):
     """
     Train a xgb model
 
@@ -151,13 +157,15 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
     #                     objective='binary:logistic',
     #                     silent=True, nthread=nthread)
 
-    xgb_clf = XGBClassifier(n_estimators=100, nthread=n_jobs, objective='binary:logistic', silent=True,)
+    print('\n === train a xgb model === \n')
+
+    xgb_clf = XGBClassifier(n_estimators=n_estimators, nthread=n_jobs, objective='binary:logistic', silent=True,)
 
     if hyperparameter_tuning:
         print('xgb hyperparameter tuning ...')
 
         params = {
-            'n_estimators': [80, 100, 200, 300],
+            'n_estimators': [5, 10, 80, 100, 200],
             'min_child_weight': [1, 5, 10],
             # 'gamma': [0.5, 1, 1.5, 2, 5],
             'gamma': [0.5, 1, 1.5, 2],
@@ -212,24 +220,26 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
         xgb_model_path = model_path
         # xgb_clf.save_model(xgb_model_path)
     joblib.dump(xgb_clf, xgb_model_path)
-    print('save the xgb model to {}'.format(xgb_model_path))
+    print('\n save the xgb model to {}'.format(xgb_model_path))
 
     return xgb_clf, xgb_model_path
 
 
-def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3):
+def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, n_estimators=100):
     """
     Train a RF classifier
 
     Reference
     https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74
     """
-    model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=n_jobs)
+    print('\n === train a random forest model === \n')
+
+    model = RandomForestClassifier(n_estimators=n_estimators, random_state=42, n_jobs=n_jobs)
 
     if hyperparameter_tuning:
         # Number of trees in random forest
         #n_estimators = [int(x) for x in np.linspace(start=200, stop=2000, num=10)]
-        n_estimators = [60, 100, 200, 300]
+        n_estimators = [5, 10, 80, 100, 200]
         # Number of features to consider at every split
         max_features = ['auto', 'sqrt']
         # Maximum number of levels in tree
@@ -287,7 +297,7 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
 
 
     joblib.dump(model, model_path)
-    print('save the rf model to {}'.format(model_path))
+    print('\n save the rf model to {}'.format(model_path))
 
     return model, model_path
 
@@ -297,6 +307,9 @@ def train_nb(X_train, Y_train, model_path=None):
     Train a naive bayes classifier
     """
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
+
+    print('\n === train a gaussian naive bayes model === \n')
+
     model = GaussianNB()
     model.fit(X_train, Y_train,)
 
@@ -304,7 +317,7 @@ def train_nb(X_train, Y_train, model_path=None):
         model_path = 'nb.model'
 
     joblib.dump(model, model_path)
-    print('save the GaussianNB model to {}'.format(model_path))
+    print('\n save the GaussianNB model to {}'.format(model_path))
 
     return model, model_path
 
@@ -318,6 +331,9 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
     https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py
     https://www.kaggle.com/garethjns/microsoft-lightgbm-with-parameter-tuning-0-823?scriptVersionId=1751960
     """
+
+    print('\n === train a lightGBM === \n')
+
     d_train = lgb.Dataset(X_train, label=Y_train,
                           # categorical_feature=['aisle_id', 'department_id']
                           categorical_feature=categorical_feature,
@@ -473,6 +489,9 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
     """
     train a catboost model
     """
+
+    print('\n === train a catboost === \n')
+
     model = CatBoostClassifier(loss_function='Logloss',
                                iterations=num_boost_round,
                                #learning_rate=1,
@@ -487,7 +506,7 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
     model.save_model(model_path)
 
-    print('save the catboost model to {}'.format(model_path))
+    print('\n save the catboost model to {}'.format(model_path))
 
     return model, model_path
 
@@ -497,6 +516,9 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
     """
     load the model and predict unseen data
     """
+
+    print('\n === predict === \n')
+
     if is_lgbm:
         # lightgbm
         model = lgb.Booster(model_file=model_path)
@@ -526,6 +548,9 @@ def blend_predictions(y_pred_list, threshold=0.7):
     """
     blend the predictions
     """
+
+    print('\n === blend predictions === \n')
+
     y_pred = y_pred_list[0]
 
     for i in range(1, len(y_pred_list)):
@@ -548,8 +573,26 @@ def evaluate(y_true, y_pred):
     """
     evaluate the prediction
     """
+    print('\n === evaluate === \n')
+
+    nb_bookings_true = 0
+    for y in y_true:
+        if y == 1:
+            nb_bookings_true += 1
+    print('\n number of bookings in y_true: {}'.format(nb_bookings_true))
+    print('\n y_true shape:')
+    print(y_true.shape)
+
+    nb_bookings_pred = 0
+    for y in y_pred:
+        if y == 1:
+            nb_bookings_pred += 1
+    print('\n number of bookings in y_pred {}'.format(nb_bookings_pred))
+    print('\n y_pred shape:')
+    print(y_pred.shape)
+
     mcc_score = matthews_corrcoef(y_true, y_pred)
-    print('matthews corrcoef score {}'.format(mcc_score))
+    print('\n matthews corrcoef score {}'.format(mcc_score))
 
     """
       tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
@@ -565,8 +608,8 @@ def evaluate(y_true, y_pred):
       """
 
     accuracy = accuracy_score(y_true, y_pred)
-    print('accuracy: {}'.format(accuracy))
-    print('classification report:')
+    print('\n accuracy: {}'.format(accuracy))
+    print('\n classification report:')
     print(classification_report(y_true, y_pred))
 
     return mcc_score, accuracy
@@ -607,7 +650,7 @@ if __name__ == "__main__":
     #train_data_df = train_data_df.reindex(np.random.permutation(train_data_df.index))
 
     train_x, train_y = get_train_set(train_user_df)
-    print('-------------------')
+    print('\n -----')
     print('train set size:')
     print(train_x.shape)
     print(train_y.shape)
@@ -615,7 +658,7 @@ if __name__ == "__main__":
     train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
 
     test_x = get_test_set(target_user_df)
-    print('-------------------')
+    print('\n -----')
     print('test set size:')
     print(test_x.shape)
     # print(test_y.shape)
@@ -640,39 +683,26 @@ if __name__ == "__main__":
     #y_pred = predict('xgb.ht.model', val_x)
     #y_pred_list.append(y_pred)
 
-    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=100)
     # y_pred = predict('xgb.model', val_x)
+    # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=100)
-    # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
-    # y_pred_list.append(y_pred)
-
-    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=5)
-    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-
-    nb_1_pred = 0
-    for y in y_pred:
-        if y == 1:
-            nb_1_pred += 1
-    print('number of bookings in pred'.format(nb_1_pred))
-
-    nb_1_val = 0
-    for y in val_y:
-        if y == 1:
-            nb_1_val += 1
-    print('number of bookings in val'.format(nb_1_val))
-
-    nb_1_train = 0
-    for y in val_y:
-        if y == 1:
-            nb_1_train += 1
-    print('number of bookings in train'.format(nb_1_train))
-
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
+                                   num_boost_round=10)
+    y_pred = predict('lgbm.model', val_x, is_lgbm=True)
     evaluate(val_y, y_pred)
-
     y_pred_list.append(y_pred)
 
+    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=2)
+    # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
+
+    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=2)
+    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
 
     # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
     # y_pred = predict('rf.model', val_x)
@@ -683,10 +713,9 @@ if __name__ == "__main__":
     # y_pred_list.append(y_pred)
 
     y_pred = blend_predictions(y_pred_list)
-    print(y_pred)
-    print(len(y_pred))
-    print(type(y_pred))
-
+    # print(y_pred)
+    # print(len(y_pred))
+    # print(type(y_pred))
 
     # -------------------
     # Step 4: evaluate the model
@@ -702,12 +731,10 @@ if __name__ == "__main__":
     #
     # https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
 
-    # y_true = val_y
-    # # y_true = train_sub_y
-    #
+    y_true = val_y
     # print(y_true)
     # print(len(y_true))
     # print(type(y_true))
-    #
-    # evaluate(y_true, y_pred)
+
+    evaluate(y_true, y_pred)
 
