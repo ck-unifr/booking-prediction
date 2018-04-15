@@ -146,7 +146,7 @@ def timer(start_time=None):
 
 def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, param_comb=5, n_estimators=100):
     """
-    Train a xgb model
+    train a xgb model
 
     Reference
     https://www.kaggle.com/tilii7/hyperparameter-grid-search-with-xgboost
@@ -227,7 +227,7 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
 
 def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_jobs=3, folds=3, n_estimators=100):
     """
-    Train a RF classifier
+    train a RF classifier
 
     Reference
     https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74
@@ -512,7 +512,7 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
 
 
-def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
+def predict(model_path, X_test, is_lgbm=False, is_catboost=False, lgbm_threshold=0.5):
     """
     load the model and predict unseen data
     """
@@ -533,14 +533,19 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
-
-    # print('==')
-    # for y in y_pred:
-    #     if y == 1:
-    #         print('1')
-
     if is_lgbm:
-        return np.array([np.argmax(y) for y in y_pred])
+        #print('==')
+        #print(y_pred)
+        y_output = []
+        for y in y_pred:
+            if y > lgbm_threshold:
+                y_output.append(1)
+            else:
+                y_output.append(0)
+        #print('==')
+        #print(y_output)
+        return(np.array(y_output))
+        #return np.array([np.argmax(y) for y in y_pred])
     else:
         return y_pred
 
@@ -689,16 +694,16 @@ if __name__ == "__main__":
     #y_pred = predict('xgb.ht.model', val_x)
     #y_pred_list.append(y_pred)
 
-    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=200)
-    y_pred = predict('xgb.model', val_x)
-    evaluate(val_y, y_pred)
-    y_pred_list.append(y_pred)
-
-    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
-    #                                num_boost_round=10)
-    # y_pred = predict('lgbm.model', val_x, is_lgbm=True)
+    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=100)
+    # y_pred = predict('xgb.model', val_x)
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
+
+    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
+                                   num_boost_round=200)
+    y_pred = predict('lgbm.model', val_x, is_lgbm=True)
+    evaluate(val_y, y_pred)
+    y_pred_list.append(y_pred)
 
     # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=2)
     # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
