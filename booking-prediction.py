@@ -402,7 +402,10 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
         print(mdl.get_params().keys())
 
-        grid = GridSearchCV(mdl, gridParams, verbose=1, cv=folds, n_jobs=n_jobs)
+        grid = RandomizedSearchCV(estimator=mdl, param_distributions=gridParams,
+                                       n_iter=100, cv=folds, verbose=2, random_state=42, n_jobs=n_jobs)
+
+        #grid = GridSearchCV(mdl, gridParams, verbose=2, cv=folds, n_jobs=n_jobs)
         grid.fit(X_train, Y_train)
 
         print('best parameters:')
