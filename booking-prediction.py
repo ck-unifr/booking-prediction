@@ -47,6 +47,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import copy
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import matthews_corrcoef, classification_report, confusion_matrix, f1_score
@@ -304,7 +305,7 @@ def train_rf(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_j
 
 def train_nb(X_train, Y_train, model_path=None):
     """
-    Train a naive bayes classifier
+    train a naive bayes classifier
     """
     # reference https://www.analyticsvidhya.com/blog/2017/09/naive-bayes-explained/
 
@@ -322,10 +323,11 @@ def train_nb(X_train, Y_train, model_path=None):
     return model, model_path
 
 
-def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
+def train_lgbm(X_train, Y_train,
+               categorical_feature=['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference'],
                model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100, folds=3):
     """
-    Train a lightGBM model
+    train a lightGBM model
 
     Reference
     https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py
@@ -484,10 +486,15 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
     return gbm, model_path
 
 
-def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
-               model_path=None, hyperparameter_tuning=False, num_boost_round=100):
+def train_catboost(X_train, Y_train,
+                   categorical_feature=[0, 1, 2, 3, 4, 5],
+                   #categorical_feature=['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference'],
+                   model_path=None, hyperparameter_tuning=False, num_boost_round=100):
     """
     train a catboost model
+
+    Reference:
+    https://tech.yandex.com/catboost/doc/dg/concepts/python-usages-examples-docpage/
     """
 
     print('\n === train a catboost === \n')
@@ -699,21 +706,23 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
-                                   num_boost_round=200)
-    y_pred = predict('lgbm.model', val_x, is_lgbm=True)
-    evaluate(val_y, y_pred)
-    y_pred_list.append(y_pred)
+    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
+    #                                num_boost_round=200)
+    # y_pred = predict('lgbm.model', val_x, is_lgbm=True)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
 
     # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=2)
     # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=2)
-    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
+    print('columns')
+    print(train_sub_x.columns)
+    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
+    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    evaluate(val_y, y_pred)
+    y_pred_list.append(y_pred)
 
     # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
     # y_pred = predict('rf.model', val_x)
