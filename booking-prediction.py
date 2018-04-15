@@ -199,8 +199,8 @@ def train_xgb(X_train, Y_train, hyperparameter_tuning=False, model_path=None, n_
         print('save xgb random search results to {}'.format(result_csv_path))
         print('--------------')
 
-        xgb_clf = random_search
-        #xgb_clf = random_search.best_estimator_
+        #xgb_clf = random_search
+        xgb_clf = random_search.best_estimator_
     else:
         xgb_clf.fit(train_sub_x, train_sub_y)
 
