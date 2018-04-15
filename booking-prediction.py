@@ -533,6 +533,7 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
     # y_pred = model.predict_prob(X_test)
     y_pred = model.predict(X_test)
 
+
     # print('==')
     # for y in y_pred:
     #     if y == 1:
@@ -709,7 +710,7 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=2)
+    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
     y_pred = predict('rf.model', val_x)
     evaluate(val_y, y_pred)
     y_pred_list.append(y_pred)
