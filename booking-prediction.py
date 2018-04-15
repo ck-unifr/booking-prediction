@@ -49,7 +49,7 @@ import pandas as pd
 from datetime import datetime
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import matthews_corrcoef, classification_report, confusion_matrix
+from sklearn.metrics import matthews_corrcoef, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
@@ -612,7 +612,12 @@ def evaluate(y_true, y_pred):
     print('\n classification report:')
     print(classification_report(y_true, y_pred))
 
-    return mcc_score, accuracy
+    f1score = f1_score(y_true, y_pred, average='binary')
+    print('\n f1 score: {}'.format(f1score))
+
+    #roc_auc_score(y_true, y_pred)
+
+    return mcc_score, accuracy, f1score
 
 
 if __name__ == "__main__":
