@@ -314,6 +314,7 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
     Reference
     https://github.com/Microsoft/LightGBM/blob/master/examples/python-guide/advanced_example.py
+    https://www.kaggle.com/garethjns/microsoft-lightgbm-with-parameter-tuning-0-823?scriptVersionId=1751960
     """
     d_train = lgb.Dataset(X_train, label=Y_train,
                           # categorical_feature=['aisle_id', 'department_id']
@@ -323,8 +324,11 @@ def train_lgbm(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
     params = {
         'boosting_type': 'gbdt',
         'objective': 'binary',
-        'metric': 'binary_logloss',
-        'n_jobs': n_jobs,
+        'num_class': 1,                # must be 1 for non-multiclass training
+        'metric': 'binary_error',
+        #'metric': 'binary_logloss',
+        #'n_jobs': n_jobs,
+        'nthread': n_jobs,
         #'num_leaves': 31,
         #'learning_rate': 0.05,
         #'feature_fraction': 0.9,
@@ -404,7 +408,7 @@ def train_catboost(X_train, Y_train, categorical_feature=[0, 1, 2, 3, 4, 5],
 
 
 
-def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5):
+def predict(model_path, X_test, is_lgbm=False, is_catboost=False):
     """
     load the model and predict unseen data
     """
@@ -423,14 +427,7 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, threshold=0.5)
     y_pred = model.predict(X_test)
 
     if is_lgbm:
-        y_output = []
-        for y in y_pred:
-            if y > threshold:
-                y_output.append(1)
-            else:
-                y_output.append(0)
-
-        return np.array(y_output)
+        return np.array([np.argmax(y) for y in y_pred])
     else:
         return y_pred
 
@@ -511,6 +508,7 @@ if __name__ == "__main__":
     #
     # category data in machine learning
     # Reference:
+    # https://medium.com/unstructured/how-feature-engineering-can-help-you-do-well-in-a-kaggle-competition-part-i-9cc9a883514d
     # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-66041f734512
     # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-42fd0a43b009
 
@@ -524,27 +522,27 @@ if __name__ == "__main__":
     # y_pred = predict('xgb.ht.model', val_x)
     # y_pred_list.append(y_pred)
 
-    model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
-    y_pred = predict('xgb.model', val_x)
-    y_pred_list.append(y_pred)
+    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model')
+    # y_pred = predict('xgb.model', val_x)
+    # y_pred_list.append(y_pred)
 
     model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model', num_boost_round=200)
     y_pred = predict('lgbm.model', val_x, is_lgbm=True)
-    y_pred_list.append(y_pred)
+    #y_pred_list.append(y_pred)
 
-    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=200)
-    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-    y_pred_list.append(y_pred)
+    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=200)
+    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    # y_pred_list.append(y_pred)
+    #
+    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
+    # y_pred = predict('rf.model', val_x)
+    # y_pred_list.append(y_pred)
+    #
+    # model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
+    # y_pred = predict('nb.model', val_x)
+    # y_pred_list.append(y_pred)
 
-    model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model')
-    y_pred = predict('rf.model', val_x)
-    y_pred_list.append(y_pred)
-
-    model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
-    y_pred = predict('nb.model', val_x)
-    y_pred_list.append(y_pred)
-
-    y_pred = blend_predictions(y_pred_list)
+    #y_pred = blend_predictions(y_pred_list)
     print(y_pred)
     print(len(y_pred))
     print(type(y_pred))
