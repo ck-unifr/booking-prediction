@@ -41,14 +41,12 @@ import warnings
 warnings.filterwarnings('ignore')
 warnings.simplefilter("ignore", DeprecationWarning)
 
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import LogisticRegression
-
 import numpy as np
 import pandas as pd
 from datetime import datetime
-import copy
 
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import matthews_corrcoef, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
