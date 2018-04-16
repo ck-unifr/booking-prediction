@@ -80,15 +80,22 @@ class AddPreActions:
     default_action_values = [-10, -10]
     previous_action_names = ['action_id', 'reference']
 
-    def __init__(self, df, nb_previous_action, n_jobs=4):
+    def __init__(self, df, nb_previous_action=2, step_size=100, n_jobs=4):
         self.df = df
         self.nb_previous_action = nb_previous_action
         self.n_jobs = n_jobs
+        self.step_size = step_size
 
     def func_add_previous_action(self, session_id):
+        """
+        for each session, at each step_size add nb_previous_action previous action information
+        """
         current_steps = self.df[self.df['session_id'] == session_id]['step'].tolist()
 
-        for current_step in current_steps:
+        # for current_step in current_steps:
+        for j in range(0, len(current_steps), self.step_size):
+            current_step = current_steps[j]
+
             for i in range(self.nb_previous_action):
                 previous_step = current_step - (i + 1)
                 previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
@@ -98,16 +105,17 @@ class AddPreActions:
                         # print('previous')
                         # print(previous_df[previous_action].values)
                         # print('----')
-                        self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
+                        self.df.loc[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values[0]
 
         # print('---')
         print(session_id)
-        # print(self.df[self.df['session_id']==session_id])
+        # print(self.df[self.df['session_id'] == session_id])
+
 
 
     def add_previous_action(self,):
         """
-        add previous action information (e.g., action_id, reference) to the dataframe
+        for each session, at each step_size steps, add nb_previous_action previous action information
         """
         # TODO: this function should be optimized, e.g., using mapping function.
 
@@ -119,73 +127,12 @@ class AddPreActions:
                 self.df[new_col_name] = self.default_action_values[j]
 
         # start_time = time.time()
-
         session_id_list = self.df['session_id'].unique()
 
         print('\nnumber of sessions: {}'.format(len(session_id_list)))
 
         with Pool(self.n_jobs) as p:
-            print(p.map(self.func_add_previous_action, session_id_list))
-
-        # for k, session_id in enumerate(session_id_list):
-            # _thread.start_new_thread(self.func_add_previous_action, ('thread-{}'.format(session_id), session_id))
-
-            # self.func_add_previous_action(session_id)
-
-            # current_steps = self.df[self.df['session_id'] == session_id]['step'].tolist()
-            # for current_step in current_steps:
-            #     for i in range(self.nb_previous_action):
-            #         previous_step = current_step - (i + 1)
-            #         previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
-            #         if (not previous_df is None) and (not previous_df.empty):
-            #             for previous_action in self.previous_action_names:
-            #                 col_name = '{}_{}'.format(previous_action, (i + 1))
-            #                 # print('previous')
-            #                 # print(previous_df[previous_action].values)
-            #                 # print('----')
-            #                 self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
-
-            # if k % 2 == 0:
-            #     time_used = time.time() - start_time
-            #     time_needed = (time_used / (k + 1)) * (len(session_id_list) - k - 1)
-            #
-            #     print('{} / {}'.format(k + 1, len(session_id_list)))
-            #     print('time used (mins): {}'.format(round(time_used / 60, 2)))
-            #     print('time required (mins): {}'.format(round(time_needed / 60, 2)))
-            #
-            #     print('\nnew dataframe')
-            #     print(self.df.head(5))
-            #
-            #     print('---')
-            #     print(session_id)
-            #     print(self.df[self.df['session_id'] == session_id])
-
-            # Parallel(n_jobs=self.n_jobs)(delayed(self.func_add_previous_action)(session_id) for session_id in session_id_list)
-
-            # print(self.df.head(5))
-            # start_time = time.time()
-            # if k % 2 == 0:
-            #     time_used = time.time() - start_time
-            #     time_needed = (time_used / (k + 1)) * (len(session_id_list) - k - 1)
-            #
-            #     print('{} / {}'.format(k + 1, len(session_id_list)))
-            #     print('time used (mins): {}'.format(round(time_used / 60, 2)))
-            #     print('time required (mins): {}'.format(round(time_needed / 60, 2)))
-            #
-            #     print('\nnew dataframe')
-            #     print(self.df.head(5))
-
-            # current_steps = df[df[session_id_name] == session_id][step_name].tolist()
-            # for current_step in current_steps:
-            #     for i in range(nb_previous_action):
-            #         previous_step = current_step - (i + 1)
-            #         previous_df = df[(df[session_id_name] == session_id) & (df[step_name] == previous_step)]
-            #         if not previous_df is None:
-            #             for previous_action in previous_action_list:
-            #                 col_name = '{}_{}'.format(previous_action, (i + 1))
-            #                 df[(df[session_id_name] == session_id) & (df[step_name] == current_step)][col_name] = \
-            #                 previous_df[previous_action]
-
+            p.map(self.func_add_previous_action, session_id_list)
 
 
 if __name__ == "__main__":
@@ -214,27 +161,31 @@ if __name__ == "__main__":
 
     # ----------
     # add previous action information
+    # for each session, at each step_size add nb_previous_action previous action information
+    step_size = 20
+    print('step size: {}'.format(step_size))
     for nb_previous_action in [2]:
+        print('number of previous steps: {}'.format(nb_previous_action))
         # train data
         print('\n{}'.format(nb_previous_action))
 
         print('\ntrain data')
-        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, n_jobs=6)
+        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=6)
         addprevAc.add_previous_action()
         train_user_df = addprevAc.df
 
-        df_path = 'train_user_df_{}'.format(nb_previous_action)
+        df_path = 'train_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
         train_user_df.to_csv(df_path, sep='\t')
         print('\nsave train data to {}'.format(df_path))
         print(train_user_df.head(5))
 
 
         print('\ntarget data')
-        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, n_jobs=6)
+        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=6)
         addprevAc.add_previous_action()
         target_user_df = addprevAc.df
 
-        df_path = 'target_user_df_{}'.format(nb_previous_action)
+        df_path = 'target_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
         target_user_df.to_csv(df_path, sep='\t')
         print('\nsave target data to {}'.format(df_path))
         print(target_user_df.head(5))
