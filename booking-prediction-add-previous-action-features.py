@@ -101,7 +101,7 @@ class AddPreActions:
                         self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
 
         # print('---')
-        # print(session_id)
+        print(session_id)
         # print(self.df[self.df['session_id']==session_id])
 
 
@@ -122,9 +122,10 @@ class AddPreActions:
 
         session_id_list = self.df['session_id'].unique()
 
-        with Pool(100) as p:
-            print(p.map(self.func_add_previous_action, session_id_list))
+        print('\nnumber of sessions: {}'.format(len(session_id_list)))
 
+        with Pool(self.n_jobs) as p:
+            print(p.map(self.func_add_previous_action, session_id_list))
 
         # for k, session_id in enumerate(session_id_list):
             # _thread.start_new_thread(self.func_add_previous_action, ('thread-{}'.format(session_id), session_id))
@@ -213,11 +214,27 @@ if __name__ == "__main__":
 
     # ----------
     # add previous action information
-    addprevAc = AddPreActions(df=train_user_df, nb_previous_action=2, n_jobs=6)
-    addprevAc.add_previous_action()
-    train_user_df = addprevAc.df
+    for nb_previous_action in [2]:
+        # train data
+        print('\n{}'.format(nb_previous_action))
 
-    print(train_user_df.head(10))
+        print('\ntrain data')
+        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, n_jobs=6)
+        addprevAc.add_previous_action()
+        train_user_df = addprevAc.df
 
-    df_path = 'train_user_df_{}'.format(2)
-    train_user_df.to_csv(df_path, sep='\t')
+        df_path = 'train_user_df_{}'.format(nb_previous_action)
+        train_user_df.to_csv(df_path, sep='\t')
+        print('\nsave train data to {}'.format(df_path))
+        print(train_user_df.head(5))
+
+
+        print('\ntarget data')
+        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, n_jobs=6)
+        addprevAc.add_previous_action()
+        target_user_df = addprevAc.df
+
+        df_path = 'target_user_df_{}'.format(nb_previous_action)
+        target_user_df.to_csv(df_path, sep='\t')
+        print('\nsave target data to {}'.format(df_path))
+        print(target_user_df.head(5))
