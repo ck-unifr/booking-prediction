@@ -117,8 +117,6 @@ class AddPreActions:
         """
         for each session, at each step_size steps, add nb_previous_action previous action information
         """
-        # TODO: this function should be optimized, e.g., using mapping function.
-
         print('== add previous action information ==')
 
         for i in range(self.nb_previous_action):
