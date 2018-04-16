@@ -651,6 +651,7 @@ if __name__ == "__main__":
     train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
     train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
 
+
     target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
     target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
 
