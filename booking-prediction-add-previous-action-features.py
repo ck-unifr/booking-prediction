@@ -2,6 +2,8 @@ import time
 import pandas as pd
 import numpy as np
 from joblib import Parallel, delayed
+import _thread
+from multiprocessing import Pool
 
 np.random.seed(42)
 
@@ -74,6 +76,7 @@ def get_test_set(df, feature_columns):
 
 
 class AddPreActions:
+
     default_action_values = [-10, -10]
     previous_action_names = ['action_id', 'reference']
 
@@ -89,14 +92,17 @@ class AddPreActions:
             for i in range(self.nb_previous_action):
                 previous_step = current_step - (i + 1)
                 previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
-                if not previous_df is None:
+                if (not previous_df is None) and (not previous_df.empty):
                     for previous_action in self.previous_action_names:
                         col_name = '{}_{}'.format(previous_action, (i + 1))
-                        self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action]
+                        # print('previous')
+                        # print(previous_df[previous_action].values)
+                        # print('----')
+                        self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
 
-        print('---')
-        print(session_id)
-        print(self.df[self.df['session_id']==session_id])
+        # print('---')
+        # print(session_id)
+        # print(self.df[self.df['session_id']==session_id])
 
 
     def add_previous_action(self,):
@@ -112,38 +118,46 @@ class AddPreActions:
                 new_col_name = '{}_{}'.format(previous_action, (i + 1))
                 self.df[new_col_name] = self.default_action_values[j]
 
-        start_time = time.time()
+        # start_time = time.time()
 
         session_id_list = self.df['session_id'].unique()
-        for k, session_id in enumerate(session_id_list):
-            current_steps = self.df[self.df['session_id'] == session_id]['step'].tolist()
 
-            for current_step in current_steps:
-                for i in range(self.nb_previous_action):
-                    previous_step = current_step - (i + 1)
-                    previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
-                    if (not previous_df is None) and (not previous_df.empty):
-                        for previous_action in self.previous_action_names:
-                            col_name = '{}_{}'.format(previous_action, (i + 1))
-                            # print('previous')
-                            # print(previous_df[previous_action].values)
-                            # print('----')
-                            self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
+        with Pool(100) as p:
+            print(p.map(self.func_add_previous_action, session_id_list))
 
-            if k % 2 == 0:
-                time_used = time.time() - start_time
-                time_needed = (time_used / (k + 1)) * (len(session_id_list) - k - 1)
 
-                print('{} / {}'.format(k + 1, len(session_id_list)))
-                print('time used (mins): {}'.format(round(time_used / 60, 2)))
-                print('time required (mins): {}'.format(round(time_needed / 60, 2)))
+        # for k, session_id in enumerate(session_id_list):
+            # _thread.start_new_thread(self.func_add_previous_action, ('thread-{}'.format(session_id), session_id))
 
-                print('\nnew dataframe')
-                print(self.df.head(5))
+            # self.func_add_previous_action(session_id)
 
-                print('---')
-                print(session_id)
-                print(self.df[self.df['session_id'] == session_id])
+            # current_steps = self.df[self.df['session_id'] == session_id]['step'].tolist()
+            # for current_step in current_steps:
+            #     for i in range(self.nb_previous_action):
+            #         previous_step = current_step - (i + 1)
+            #         previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
+            #         if (not previous_df is None) and (not previous_df.empty):
+            #             for previous_action in self.previous_action_names:
+            #                 col_name = '{}_{}'.format(previous_action, (i + 1))
+            #                 # print('previous')
+            #                 # print(previous_df[previous_action].values)
+            #                 # print('----')
+            #                 self.df.ix[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values
+
+            # if k % 2 == 0:
+            #     time_used = time.time() - start_time
+            #     time_needed = (time_used / (k + 1)) * (len(session_id_list) - k - 1)
+            #
+            #     print('{} / {}'.format(k + 1, len(session_id_list)))
+            #     print('time used (mins): {}'.format(round(time_used / 60, 2)))
+            #     print('time required (mins): {}'.format(round(time_needed / 60, 2)))
+            #
+            #     print('\nnew dataframe')
+            #     print(self.df.head(5))
+            #
+            #     print('---')
+            #     print(session_id)
+            #     print(self.df[self.df['session_id'] == session_id])
 
             # Parallel(n_jobs=self.n_jobs)(delayed(self.func_add_previous_action)(session_id) for session_id in session_id_list)
 
