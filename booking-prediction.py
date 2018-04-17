@@ -630,6 +630,20 @@ def evaluate(y_true, y_pred):
 
     return mcc_score, accuracy, f1score
 
+def save_prediction(target_user_df, y_pred, file_path):
+    """
+    save predictions to a csv file
+    """
+    prediciton_df = pd.DataFrame(columns=['session_id', 'has_booking'])
+    prediciton_df['session_id'] = target_user_df['session_id'].values
+    prediciton_df['has_booking'] = [int(y) for y in y_pred]
+
+    print('prediction')
+    print(prediciton_df['has_booking'].unique())
+
+    prediciton_df.to_csv(file_path, '\t')
+    print('save prediction to {}'.format(file_path))
+
 
 if __name__ == "__main__":
 
@@ -694,7 +708,7 @@ if __name__ == "__main__":
     # -------------------
     # Step 3: train model and make predictions
     #
-    y_pred_list = []
+    # y_pred_list = []
 
     #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
     #y_pred = predict('xgb.ht.model', val_x)
@@ -716,12 +730,13 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    print('columns')
-    print(train_sub_x.columns)
-    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='catboost.model', num_boost_round=10)
-    y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-    evaluate(val_y, y_pred)
-    y_pred_list.append(y_pred)
+    # print('columns')
+    # print(train_sub_x.columns)
+    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False,
+    #                                    model_path='catboost.model', num_boost_round=10)
+    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
+    # evaluate(val_y, y_pred)
+    # y_pred_list.append(y_pred)
 
     # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
     # y_pred = predict('rf.model', val_x)
@@ -739,7 +754,7 @@ if __name__ == "__main__":
     # evaluate(val_y, y_pred)
     # y_pred_list.append(y_pred)
 
-    y_pred = blend_predictions(y_pred_list)
+    # y_pred = blend_predictions(y_pred_list)
     # print(y_pred)
     # print(len(y_pred))
     # print(type(y_pred))
@@ -758,10 +773,23 @@ if __name__ == "__main__":
     #
     # https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
 
-    y_true = val_y
+    # y_true = val_y
     # print(y_true)
     # print(len(y_true))
     # print(type(y_true))
 
-    evaluate(y_true, y_pred)
+    # evaluate(y_true, y_pred)
+
+    # -------------------
+    # Step 4: make prediction on the target data
+    #
+    model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=False,
+                                       model_path='catboost-100.model', num_boost_round=100)
+    y_pred = predict(model_path='catboost-100.model', X_test=test_x, is_catboost=True)
+
+    save_prediction(target_user_df, y_pred, 'prediction-catboost-100.csv')
+
+
+    # save prediction
+
 
