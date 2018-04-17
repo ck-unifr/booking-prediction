@@ -4,6 +4,7 @@ import numpy as np
 from joblib import Parallel, delayed
 import _thread
 from multiprocessing import Pool
+from random import shuffle
 
 np.random.seed(42)
 
@@ -108,7 +109,7 @@ class AddPreActions:
                         self.df.loc[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values[0]
 
         # print('---')
-        print(session_id)
+        # print(session_id)
         # print(self.df[self.df['session_id'] == session_id])
 
 
@@ -139,30 +140,36 @@ if __name__ == "__main__":
     # read data
     train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
     train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-
-    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-
     train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
     train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-
-    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-
     train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-
     train_user_df = preprocessing(train_user_df)
-
-    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-
-    target_user_df = preprocessing(target_user_df)
 
     # shuffle the train set
     train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
 
     # due to memory issue, take only a part of the train data
-    percentage = 60
-    train_user_df = train_user_df[0:(percentage/100.0)*train_user_df.shape[0]]
+    print('full train set shape: ')
+    print(train_user_df.shape)
+    percentage = 50
+    train_user_df = train_user_df[0:int((percentage/100.0)*(train_user_df.shape[0]))]
+    # session_id_list = list(train_user_df['session_id'].values)
+    # # shuffle(session_id_list)
+    # session_id_list = session_id_list[0:int((percentage/100.0)*len(session_id_list))]
+    # print('drop {} % rows'.format(percentage))
+    # for session_id in session_id_list:
+    #     index = train_user_df.index[train_user_df['session_id'] == session_id].tolist()
+    #     train_user_df.drop(train_user_df.index[index])
+    train_user_df.to_csv('train_user_df_{}.csv'.format(percentage))
+    print('sub train set shape: ')
+    print(train_user_df.shape)
+
+    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
+    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
+    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
+    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
+    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    target_user_df = preprocessing(target_user_df)
 
     # ----------
     # add previous action information
@@ -179,7 +186,7 @@ if __name__ == "__main__":
         addprevAc.add_previous_action()
         train_user_df = addprevAc.df
 
-        df_path = 'train_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
+        df_path = 'train_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
         train_user_df.to_csv(df_path, sep='\t')
         print('\nsave train data to {}'.format(df_path))
         print(train_user_df.head(5))
@@ -190,7 +197,7 @@ if __name__ == "__main__":
         addprevAc.add_previous_action()
         target_user_df = addprevAc.df
 
-        df_path = 'target_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
+        df_path = 'target_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
         target_user_df.to_csv(df_path, sep='\t')
         print('\nsave target data to {}'.format(df_path))
         print(target_user_df.head(5))
