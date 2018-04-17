@@ -101,6 +101,7 @@ class AddPreActions:
             for i in range(self.nb_previous_action):
                 previous_step = current_step - (i + 1)
                 previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]
+
                 if (not previous_df is None) and (not previous_df.empty):
                     for previous_action in self.previous_action_names:
                         col_name = '{}_{}'.format(previous_action, (i + 1))
@@ -108,6 +109,7 @@ class AddPreActions:
                         # print(previous_df[previous_action].values)
                         # print('----')
                         self.df.loc[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values[0]
+
                     del previous_df
                     gc.collect()
 
@@ -135,8 +137,16 @@ class AddPreActions:
 
         print('\nnumber of sessions: {}'.format(len(session_id_list)))
 
+        steps = 10000
+        start = 0
         with Pool(self.n_jobs) as p:
-            p.map(self.func_add_previous_action, session_id_list)
+            while start < len(session_id_list):
+                end = start + steps
+                if end > len(session_id_list):
+                    end = len(session_id_list)
+                print('start: {} end: {}'.format(start, end))
+                p.map(self.func_add_previous_action, session_id_list[start:end])
+                start = end
 
 
 if __name__ == "__main__":
