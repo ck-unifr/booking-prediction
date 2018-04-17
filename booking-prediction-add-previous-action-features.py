@@ -5,6 +5,7 @@ from joblib import Parallel, delayed
 import _thread
 from multiprocessing import Pool
 from random import shuffle
+import gc
 
 np.random.seed(42)
 
@@ -108,6 +109,8 @@ class AddPreActions:
                         # print('----')
                         self.df.loc[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values[0]
 
+        del current_steps
+        gc.collect()
         # print('---')
         # print(session_id)
         # print(self.df[self.df['session_id'] == session_id])
@@ -138,31 +141,34 @@ if __name__ == "__main__":
 
     # ----------
     # read data
-    train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
-    train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-    train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
-    train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-    train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    train_user_df = preprocessing(train_user_df)
+    # train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
+    # train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
+    # train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
+    # train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
+    # train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    # train_user_df = preprocessing(train_user_df)
+    #
+    # # shuffle the train set
+    # train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+    #
+    # # due to memory issue, take only a part of the train data
+    # print('full train set shape: ')
+    # print(train_user_df.shape)
+    # percentage = 50
+    # train_user_df = train_user_df[0:int((percentage/100.0)*(train_user_df.shape[0]))]
+    # # session_id_list = list(train_user_df['session_id'].values)
+    # # # shuffle(session_id_list)
+    # # session_id_list = session_id_list[0:int((percentage/100.0)*len(session_id_list))]
+    # # print('drop {} % rows'.format(percentage))
+    # # for session_id in session_id_list:
+    # #     index = train_user_df.index[train_user_df['session_id'] == session_id].tolist()
+    # #     train_user_df.drop(train_user_df.index[index])
+    # train_user_df.to_csv('train_user_df_{}.csv'.format(percentage))
+    # print('sub train set shape: ')
+    # print(train_user_df.shape)
 
-    # shuffle the train set
-    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
-
-    # due to memory issue, take only a part of the train data
-    print('full train set shape: ')
-    print(train_user_df.shape)
     percentage = 50
-    train_user_df = train_user_df[0:int((percentage/100.0)*(train_user_df.shape[0]))]
-    # session_id_list = list(train_user_df['session_id'].values)
-    # # shuffle(session_id_list)
-    # session_id_list = session_id_list[0:int((percentage/100.0)*len(session_id_list))]
-    # print('drop {} % rows'.format(percentage))
-    # for session_id in session_id_list:
-    #     index = train_user_df.index[train_user_df['session_id'] == session_id].tolist()
-    #     train_user_df.drop(train_user_df.index[index])
-    train_user_df.to_csv('train_user_df_{}.csv'.format(percentage))
-    print('sub train set shape: ')
-    print(train_user_df.shape)
+    train_user_df = pd.read_csv('train_user_df_{}.csv'.format(percentage))
 
     target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
     target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
