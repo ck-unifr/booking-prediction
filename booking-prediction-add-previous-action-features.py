@@ -121,7 +121,7 @@ class AddPreActions:
 
 
 
-    def add_previous_action(self,):
+    def add_previous_action(self,  steps = 10000):
         """
         for each session, at each step_size steps, add nb_previous_action previous action information
         """
@@ -137,16 +137,24 @@ class AddPreActions:
 
         print('\nnumber of sessions: {}'.format(len(session_id_list)))
 
-        steps = 10000
         start = 0
+        start_time = time.time()
+        session_len = len(session_id_list)
         with Pool(self.n_jobs) as p:
-            while start < len(session_id_list):
+            while start < session_len:
                 end = start + steps
-                if end > len(session_id_list):
-                    end = len(session_id_list)
+                if end > session_len:
+                    end = session_len
                 print('start: {} end: {}'.format(start, end))
                 p.map(self.func_add_previous_action, session_id_list[start:end])
                 start = end
+
+                time_used = time.time() - start_time
+                time_needed = (time_used / (end))*(session_len - end)
+
+                print('{}/{}'.format(end, session_len))
+                print('time used (mins): {}'.format(round(time_used/60, 2)))
+                print('time required (mins): {}'.format(round(time_needed / 60, 2)))
 
 
 if __name__ == "__main__":
