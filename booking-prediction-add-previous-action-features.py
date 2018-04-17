@@ -108,6 +108,8 @@ class AddPreActions:
                         # print(previous_df[previous_action].values)
                         # print('----')
                         self.df.loc[(self.df['session_id'] == session_id) & (self.df['step'] == current_step), col_name] = previous_df[previous_action].values[0]
+                    del previous_df
+                    gc.collect()
 
         del current_steps
         gc.collect()
@@ -188,7 +190,7 @@ if __name__ == "__main__":
         print('\n{}'.format(nb_previous_action))
 
         print('\ntrain data')
-        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=4)
+        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=2)
         addprevAc.add_previous_action()
         train_user_df = addprevAc.df
 
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
 
         print('\ntarget data')
-        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=4)
+        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=2)
         addprevAc.add_previous_action()
         target_user_df = addprevAc.df
 
