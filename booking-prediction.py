@@ -784,8 +784,8 @@ if __name__ == "__main__":
     # Step 4: make prediction on the target data
     #
     model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=False,
-                                       model_path='catboost-100.model', num_boost_round=100)
-    y_pred = predict(model_path='catboost-100.model', X_test=test_x, is_catboost=True)
+                                       model_path='catboost-2.model', num_boost_round=2)
+    y_pred = predict(model_path='catboost-2.model', X_test=test_x, is_catboost=True)
 
     save_prediction(target_user_df, y_pred, 'prediction-catboost-100.csv')
 
