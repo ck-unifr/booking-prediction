@@ -157,6 +157,13 @@ if __name__ == "__main__":
 
     target_user_df = preprocessing(target_user_df)
 
+    # shuffle the train set
+    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+
+    # due to memory issue, take only a part of the train data
+    percentage = 60
+    train_user_df = train_user_df[0:(percentage/100.0)*train_user_df.shape[0]]
+
     # ----------
     # add previous action information
     # for each session, at each step_size add nb_previous_action previous action information
@@ -168,7 +175,7 @@ if __name__ == "__main__":
         print('\n{}'.format(nb_previous_action))
 
         print('\ntrain data')
-        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=6)
+        addprevAc = AddPreActions(df=train_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=4)
         addprevAc.add_previous_action()
         train_user_df = addprevAc.df
 
@@ -179,7 +186,7 @@ if __name__ == "__main__":
 
 
         print('\ntarget data')
-        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=6)
+        addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=4)
         addprevAc.add_previous_action()
         target_user_df = addprevAc.df
 
