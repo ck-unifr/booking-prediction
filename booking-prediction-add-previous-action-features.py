@@ -217,9 +217,9 @@ if __name__ == "__main__":
     # ----------
     # add previous action information
     # for each session, at each step_size add nb_previous_action previous action information
-    step_size = 200
+    step_size = 100
     print('step size: {}'.format(step_size))
-    for nb_previous_action in [3, 4]:
+    for nb_previous_action in [2, 3]:
         train_user_df = pd.read_csv('train_user_df.csv')
         target_user_df = pd.read_csv('target_user_df.csv')
 
