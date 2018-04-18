@@ -1,3 +1,12 @@
+# Prediction of bookings based on user behavior
+# Data Scientist – User Profiling, Hotel Search
+#
+# Feature engineering
+#
+# Author: Kai Chen
+# Date: Apr, 2018
+#
+
 import time
 import pandas as pd
 import numpy as np
