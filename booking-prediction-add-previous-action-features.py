@@ -132,8 +132,6 @@ class AddPreActions:
         # print(session_id)
         # print(self.df[self.df['session_id'] == session_id])
 
-
-
     def add_previous_action(self,  steps = 5000):
         """
         for each session, at each step_size steps, add nb_previous_action previous action information
@@ -211,13 +209,12 @@ if __name__ == "__main__":
 
     # ----------
     # read test data
-
-    # target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    # target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-    # target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    # target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-    # target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    # target_user_df = preprocessing(target_user_df)
+    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
+    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
+    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
+    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
+    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    target_user_df = preprocessing(target_user_df)
 
     # ----------
     # add previous action information
