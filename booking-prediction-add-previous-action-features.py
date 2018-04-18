@@ -231,7 +231,9 @@ if __name__ == "__main__":
         addprevAc.add_previous_action()
         train_user_df = addprevAc.df
 
-        df_path = 'train_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
+        df_path = 'train_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
+        if percentage < 100:
+            df_path = 'train_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
         train_user_df.to_csv(df_path, sep='\t')
         print('\nsave train data to {}'.format(df_path))
         print(train_user_df.head(5))
