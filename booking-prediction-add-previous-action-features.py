@@ -105,10 +105,12 @@ class AddPreActions:
         """
         current_steps = self.df[self.df['session_id'] == session_id]['step'].tolist()
 
+        # TODO: use groupby
         # for current_step in current_steps:
         for j in range(0, len(current_steps), self.step_size):
             current_step = current_steps[j]
 
+            # add nb_previous_action previous action information
             for i in range(self.nb_previous_action):
                 previous_step = current_step - (i + 1)
                 previous_df = self.df[(self.df['session_id'] == session_id) & (self.df['step'] == previous_step)]

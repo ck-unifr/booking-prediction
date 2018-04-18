@@ -568,6 +568,7 @@ def blend_predictions(y_pred_list, threshold=0.7):
         for j in range(len(y_pred)):
             y_pred[j] += y_pred_list[i][j]
 
+    # average the predictions
     y_pred = y_pred*1.0 / len(y_pred_list)
 
     y_output = []
@@ -630,6 +631,7 @@ def evaluate(y_true, y_pred):
 
     return mcc_score, accuracy, f1score
 
+
 def save_prediction(target_user_df, y_pred, file_path):
     """
     save predictions to a csv file
@@ -643,6 +645,7 @@ def save_prediction(target_user_df, y_pred, file_path):
 
     prediciton_df.to_csv(file_path, '\t')
     print('save prediction to {}'.format(file_path))
+
 
 
 if __name__ == "__main__":
