@@ -78,11 +78,13 @@ def get_test_set(df, feature_columns):
 
 
 class AddPreActions:
-
-    default_action_values = [-10, -10]
+    """
+    for each session at each step, add its previous steps information
+    """
     previous_action_names = ['action_id', 'reference']
+    default_action_values = [-10, -10]
 
-    def __init__(self, df, nb_previous_action=2, step_size=100, n_jobs=4):
+    def __init__(self, df, nb_previous_action=2, step_size=100, n_jobs=2):
         self.df = df
         self.nb_previous_action = nb_previous_action
         self.n_jobs = n_jobs
@@ -121,7 +123,7 @@ class AddPreActions:
 
 
 
-    def add_previous_action(self,  steps = 10000):
+    def add_previous_action(self,  steps = 5000):
         """
         for each session, at each step_size steps, add nb_previous_action previous action information
         """
@@ -140,67 +142,76 @@ class AddPreActions:
         start = 0
         start_time = time.time()
         session_len = len(session_id_list)
-        with Pool(self.n_jobs) as p:
-            while start < session_len:
-                end = start + steps
-                if end > session_len:
-                    end = session_len
-                print('start: {} end: {}'.format(start, end))
+        while start < session_len:
+            end = start + steps
+            if end > session_len:
+                end = session_len
+            print('start: {} end: {}'.format(start, end))
+            with Pool(self.n_jobs) as p:
                 p.map(self.func_add_previous_action, session_id_list[start:end])
-                start = end
+            start = end
 
-                time_used = time.time() - start_time
-                time_needed = (time_used / (end))*(session_len - end)
+            time_used = time.time() - start_time
+            time_needed = (time_used / (end))*(session_len - end)
 
-                print('{}/{}'.format(end, session_len))
-                print('time used (mins): {}'.format(round(time_used/60, 2)))
-                print('time required (mins): {}'.format(round(time_needed / 60, 2)))
+            print('{}/{}'.format(end, session_len))
+            print('time used (mins): {}'.format(round(time_used/60, 2)))
+            print('time required (mins): {}'.format(round(time_needed / 60, 2)))
+
+
+def get_data(df, percentage, csv_path):
+    """
+    randomly select a part of the data and save it to a csv file
+    """
+    if percentage >= 100:
+        return df
+    else:
+        print('full data shape: ')
+        print(df.shape)
+
+        df = df.reindex(np.random.permutation(df.index))
+        df_sub = df[0:int((percentage/100.0)*(df.shape[0]))]
+
+        df_sub.to_csv(csv_path)
+        print('sub data shape: ')
+        print(df_sub.shape)
+
 
 
 if __name__ == "__main__":
 
     # ----------
-    # read data
-    # train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
-    # train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-    # train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
-    # train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-    # train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    # train_user_df = preprocessing(train_user_df)
-    #
-    # # shuffle the train set
-    # train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
-    #
-    # # due to memory issue, take only a part of the train data
-    # print('full train set shape: ')
-    # print(train_user_df.shape)
-    # percentage = 50
-    # train_user_df = train_user_df[0:int((percentage/100.0)*(train_user_df.shape[0]))]
-    # # session_id_list = list(train_user_df['session_id'].values)
-    # # # shuffle(session_id_list)
-    # # session_id_list = session_id_list[0:int((percentage/100.0)*len(session_id_list))]
-    # # print('drop {} % rows'.format(percentage))
-    # # for session_id in session_id_list:
-    # #     index = train_user_df.index[train_user_df['session_id'] == session_id].tolist()
-    # #     train_user_df.drop(train_user_df.index[index])
-    # train_user_df.to_csv('train_user_df_{}.csv'.format(percentage))
-    # print('sub train set shape: ')
-    # print(train_user_df.shape)
+    # read train data
+    train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
+    train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
+    train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
+    train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
+    train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    train_user_df = preprocessing(train_user_df)
+    train_user_df.to_csv('train_user_df.csv')
 
-    percentage = 50
-    train_user_df = pd.read_csv('train_user_df_{}.csv'.format(percentage))
+    # shuffle the train set
+    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
 
-    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    target_user_df = preprocessing(target_user_df)
+
+    # due to memory issue, take a subset of the data
+    percentage = 100
+    train_user_df = get_data(train_user_df, percentage, 'train_user_df_{}.csv'.format(percentage))
+
+    # ----------
+    # read test data
+
+    # target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
+    # target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
+    # target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
+    # target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
+    # target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    # target_user_df = preprocessing(target_user_df)
 
     # ----------
     # add previous action information
     # for each session, at each step_size add nb_previous_action previous action information
-    step_size = 20
+    step_size = 200
     print('step size: {}'.format(step_size))
     for nb_previous_action in [2]:
         print('number of previous steps: {}'.format(nb_previous_action))
@@ -223,7 +234,7 @@ if __name__ == "__main__":
         addprevAc.add_previous_action()
         target_user_df = addprevAc.df
 
-        df_path = 'target_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
+        df_path = 'target_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
         target_user_df.to_csv(df_path, sep='\t')
         print('\nsave target data to {}'.format(df_path))
         print(target_user_df.head(5))
