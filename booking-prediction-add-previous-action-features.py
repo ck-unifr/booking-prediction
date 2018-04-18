@@ -191,38 +191,43 @@ if __name__ == "__main__":
 
     # ----------
     # read train data
-    train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
-    train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-    train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
-    train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-    train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    train_user_df = preprocessing(train_user_df)
-    train_user_df.to_csv('train_user_df.csv')
-
-    # shuffle the train set
-    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+    # train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
+    # train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
+    # train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
+    # train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
+    # train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    # train_user_df = preprocessing(train_user_df)
+    # train_user_df.to_csv('train_user_df.csv')
 
 
     # due to memory issue, take a subset of the data
-    percentage = 100
-    train_user_df = get_data(train_user_df, percentage, 'train_user_df_{}.csv'.format(percentage))
+    # percentage = 100
+    # train_user_df = get_data(train_user_df, percentage, 'train_user_df_{}.csv'.format(percentage))
 
     # ----------
     # read test data
-    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    target_user_df = preprocessing(target_user_df)
+    # target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
+    # target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
+    # target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
+    # target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
+    # target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    # target_user_df = preprocessing(target_user_df)
+    # target_user_df.to_csv('target_user_df.csv')
 
     # ----------
     # add previous action information
     # for each session, at each step_size add nb_previous_action previous action information
-    step_size = 200
+    step_size = 100
     print('step size: {}'.format(step_size))
-    for nb_previous_action in [2]:
-        print('number of previous steps: {}'.format(nb_previous_action))
+    for nb_previous_action in [2, 3, 4]:
+        train_user_df = pd.read_csv('train_user_df.csv')
+        target_user_df = pd.read_csv('target_user_df.csv')
+
+        # shuffle the train set
+        train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+
+        print('----------')
+        print('\nnumber of previous steps: {}'.format(nb_previous_action))
         # train data
         print('\n{}'.format(nb_previous_action))
 
@@ -232,12 +237,11 @@ if __name__ == "__main__":
         train_user_df = addprevAc.df
 
         df_path = 'train_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
-        if percentage < 100:
-            df_path = 'train_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
+        # if percentage < 100:
+        #     df_path = 'train_user_df_{}_{}_{}.csv'.format(step_size, nb_previous_action, percentage)
         train_user_df.to_csv(df_path, sep='\t')
         print('\nsave train data to {}'.format(df_path))
-        print(train_user_df.head(5))
-
+        # print(train_user_df.head(5))
 
         print('\ntarget data')
         addprevAc = AddPreActions(df=target_user_df, nb_previous_action=nb_previous_action, step_size=step_size, n_jobs=2)
@@ -247,4 +251,8 @@ if __name__ == "__main__":
         df_path = 'target_user_df_{}_{}.csv'.format(step_size, nb_previous_action)
         target_user_df.to_csv(df_path, sep='\t')
         print('\nsave target data to {}'.format(df_path))
-        print(target_user_df.head(5))
+        # print(target_user_df.head(5))
+
+        del train_user_df
+        del target_user_df
+        gc.collect()
