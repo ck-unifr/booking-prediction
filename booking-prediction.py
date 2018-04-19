@@ -832,7 +832,7 @@ if __name__ == "__main__":
     print('== train the model on the whole train dataset (with historical data) ==')
 
     approach = 2
-    num_boost_rounds = [500, 1000, 1200]
+    num_boost_rounds = [500, 1000, 1200, 1500, 2000]
     step_size = 100
     nb_previous_action = 2
     hyperparameter_tuning = False
