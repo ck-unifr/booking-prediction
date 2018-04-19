@@ -31,9 +31,13 @@ The task is to train a machine learning model to estimate if a booking occurred 
 
 ## Files
 
-* notebook: booking_prediction.ipynb
+* notebook:
+    - booking_prediction.ipynb
+
 * scripts:
     - booking-prediction.py
     - booking-prediction-add-previous-action-features.py
-* predictions: prediction-*.py
+
+* predictions:
+    - prediction-*.py
 
