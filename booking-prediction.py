@@ -640,7 +640,7 @@ def save_prediction(target_user_df, y_pred, file_path):
     prediciton_df['session_id'] = target_user_df['session_id'].values
     prediciton_df['has_booking'] = [int(y) for y in y_pred]
 
-    print('prediction')
+    print('prediction:')
     print(prediciton_df['has_booking'].unique())
 
     prediciton_df.to_csv(file_path, '\t')
