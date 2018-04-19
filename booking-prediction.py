@@ -653,48 +653,48 @@ if __name__ == "__main__":
     # -------------------
     # Step 1: read and explore the data
     #
-    train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
-    train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-
-    target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-
-    train_user_id_list = train_booking_df['user_id'].unique()
-    train_session_id_list = train_booking_df['session_id'].unique()
-
-    target_user_id_list = target_booking_df['user_id'].unique()
-    target_session_id_list = target_booking_df['session_id'].unique()
-
-    train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
-    train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-
-
-    target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-
-    train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-
-    train_user_df = preprocessing(train_user_df)
-
-    target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-
-    target_user_df = preprocessing(target_user_df)
+    # train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
+    # train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
+    #
+    # target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
+    # target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
+    #
+    # train_user_id_list = train_booking_df['user_id'].unique()
+    # train_session_id_list = train_booking_df['session_id'].unique()
+    #
+    # target_user_id_list = target_booking_df['user_id'].unique()
+    # target_session_id_list = target_booking_df['session_id'].unique()
+    #
+    # train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
+    # train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
+    #
+    #
+    # target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
+    # target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
+    #
+    # train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    #
+    # train_user_df = preprocessing(train_user_df)
+    #
+    # target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
+    #
+    # target_user_df = preprocessing(target_user_df)
 
     # shuffle
     #train_data_df = train_data_df.reindex(np.random.permutation(train_data_df.index))
 
-    train_x, train_y = get_train_set(train_user_df, feature_columns)
-    print('\n -----')
-    print('train set size:')
-    print(train_x.shape)
-    print(train_y.shape)
-
-    train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
-
-    test_x = get_test_set(target_user_df, feature_columns)
-    print('\n -----')
-    print('test set size:')
-    print(test_x.shape)
+    # train_x, train_y = get_train_set(train_user_df, feature_columns)
+    # print('\n -----')
+    # print('train set size:')
+    # print(train_x.shape)
+    # print(train_y.shape)
+    #
+    # train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
+    #
+    # test_x = get_test_set(target_user_df, feature_columns)
+    # print('\n -----')
+    # print('test set size:')
+    # print(test_x.shape)
     # print(test_y.shape)
 
 
@@ -786,13 +786,81 @@ if __name__ == "__main__":
     # -------------------
     # Step 4: make prediction on the target data
     #
-    model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=False,
-                                       model_path='catboost-2.model', num_boost_round=2)
-    y_pred = predict(model_path='catboost-2.model', X_test=test_x, is_catboost=True)
+    # model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=False,
+    #                                    model_path='catboost-2.model', num_boost_round=2)
+    # y_pred = predict(model_path='catboost-2.model', X_test=test_x, is_catboost=True)
+    # save_prediction(target_user_df, y_pred, 'prediction-catboost-100.csv')
 
-    save_prediction(target_user_df, y_pred, 'prediction-catboost-100.csv')
+    print('== prepare data (with historical data) ==')
 
+    # for each n steps add its m previous steps information
+    # n is the step_size and m is the nb_previous_action
+    step_size = 100
+    nb_previous_action = 2
+    print('step size: {}'.format(step_size))
+    print('number of previous steps: {}'.format(nb_previous_action))
 
-    # save prediction
+    train_user_df = pd.read_csv('train_user_df_{}_{}.csv'.format(step_size, nb_previous_action), sep='\t')
+    target_user_df = pd.read_csv('target_user_df_{}_{}.csv'.format(step_size, nb_previous_action), sep='\t')
+
+    print(train_user_df.columns)
+
+    no_feature_name_list = ['Unnamed: 0.1', 'Unnamed: 0', 'ymd', 'user_id', 'session_id', 'has_booking']
+    feature_columns = [feature for feature in train_user_df.columns if not feature in no_feature_name_list]
+    print('feature columns: ')
+    print(feature_columns)
+    target_columns = 'has_booking'
+
+    # shuffle the train set
+    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+
+    train_x, train_y = get_train_set(train_user_df, feature_columns)
+    print('\n -----')
+    print('train set size:')
+    print(train_x.shape)
+    print(train_y.shape)
+
+    print('feature columns: ')
+    print(train_x.columns)
+
+    test_x = get_test_set(target_user_df, feature_columns)
+    print('\n -----')
+    print('test set size:')
+    print(test_x.shape)
+    # print(test_y.shape)
+
+    print('== train the model on the whole train dataset (with historical data) ==')
+
+    approach = 2
+    num_boost_rounds = [500, 1000, 1200]
+    step_size = 100
+    nb_previous_action = 2
+    hyperparameter_tuning = False
+
+    category_feature_index_list = [i for i, feature in enumerate(feature_columns) if feature != 'step']
+    print('category feature index list:')
+    print(category_feature_index_list)
+
+    for num_boost_round in num_boost_rounds:
+        print('\nnum boost round: {}'.format(num_boost_round))
+
+        model_path = 'catboost-[approach]{}-[num_boost_round]{}-[ht]{}-[step_size]{}-[nb_prev]{}-full.model'.format(
+            approach,
+            num_boost_round,
+            hyperparameter_tuning,
+            step_size,
+            nb_previous_action)
+
+        model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=hyperparameter_tuning,
+                                           categorical_feature=category_feature_index_list,
+                                           model_path=model_path, num_boost_round=num_boost_round)
+
+        print('== make predictions (with historical data) ==')
+        y_pred = predict(model_path=model_path, X_test=test_x, is_catboost=True)
+
+        prediction_file_path = 'prediction-catboost-{}-{}-{}-{}.csv'.format(approach, num_boost_round, step_size,
+                                                                            nb_previous_action)
+        save_prediction(target_user_df, y_pred, prediction_file_path)
+
 
 
