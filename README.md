@@ -29,3 +29,11 @@ The task is to train a machine learning model to estimate if a booking occurred 
 * Propose at least 3 features that are significant to predict bookings?
 * We can spot a very significant action type. What might this action refer to?
 
+## Files
+
+* notebook: booking_prediction.ipynb
+* scripts:
+    - booking-prediction.py
+    - booking-prediction-add-previous-action-features.py
+* predictions: prediction-*.py
+
