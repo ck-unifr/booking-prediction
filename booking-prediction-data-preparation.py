@@ -66,7 +66,7 @@ NA_REFERENCE_ID = -10
 NA_STEP = 0
 
 feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
-target_column = ['has_booking']
+# target_column = ['has_booking']
 
 def prepare_data(df, nb_pre_steps=1,
                  feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step'],
@@ -85,10 +85,15 @@ def prepare_data(df, nb_pre_steps=1,
 
     # initialize the column names
     columns_add = [f_name for f_name in feature_columns]
+
     for i in range(0, nb_pre_steps):
         for previous_action_name in previous_action_names:
             col_name = '{}_{}'.format(previous_action_name, (i+1))
             columns_add.append(col_name)
+
+    if target_column in df.columns:
+        columns_add.append(target_column)
+
     df_new = pd.DataFrame(columns=columns_add)
 
     start_time = time.time()
@@ -103,9 +108,13 @@ def prepare_data(df, nb_pre_steps=1,
         val_add = []
         for feature_column in feature_columns:
             val_add.append(sub_df[feature_column].values[0])
+
         for i in range(0, nb_pre_steps):
             for j, previous_action_name in enumerate(previous_action_names):
                 val_add.append(default_action_values[j])
+
+        if target_column in sub_df.columns:
+            val_add.append(sub_df[target_column].values[0])
 
         df_new = df_new.append(pd.DataFrame([val_add], columns=columns_add))
 
@@ -121,20 +130,18 @@ def prepare_data(df, nb_pre_steps=1,
                     # print('----')
                     df_new.iloc[index][col_name] = sub_df[previous_action_name].values[0]
 
-        if target_column in df.columns:
-            df_new.iloc[index][target_column] = group[target_column].values[0]
 
         index += 1
 
-        if index % 10000 == 0:
+        if index % 20000 == 0:
             time_used = time.time() - start_time
             time_needed = time_used / index * (total_nb_rows-index)
             print('\n{} / {}'.format(index, total_nb_rows))
             print('time used (mins): {}'.format(round(time_used / 60)))
             print('time needed (mins): {}'.format(round(time_needed / 60)))
-            print(df_new.iloc[random.randint(0, index)][columns_add])
-            if(target_column in df_new.columns):
-                print(df_new.iloc[random.randint(0, index)][target_column])
+            print(df_new.iloc[random.randint(0, index-1)][columns_add])
+            if target_column in df_new.columns:
+                print('{}: {}'.format(target_column, df_new.iloc[random.randint(0, index-1)][target_column]))
 
     return df_new
 
@@ -148,12 +155,14 @@ def prepare_datasets(param_dict):
     train_user_df_new = prepare_data(train_user_df, nb_pre_steps=nb_prev_step)
     df_path = '{}-{}.csv'.format('train_user_df', nb_prev_step)
     train_user_df_new.to_csv(df_path, index=False)
-    print('save train dataframe to {}'.format(df_path))
+    print('\nsave train dataframe to {}'.format(df_path))
+    print(train_user_df_new.head(2))
 
     target_user_df_new = prepare_data(target_user_df, nb_pre_steps=nb_prev_step)
     df_path = '{}-{}.csv'.format('target_user_df', nb_prev_step)
     target_user_df_new.to_csv(df_path, index=False)
-    print('save test dataframe to {}'.format(df_path))
+    print('\nsave test dataframe to {}'.format(df_path))
+    print(target_user_df_new.head(2))
 
     del train_user_df_new
     del target_user_df_new
@@ -181,7 +190,8 @@ if __name__ == "__main__":
     print(target_user_df.head(3))
 
 
-    nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+    nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+    # nb_prev_step_list = [1, 2]
     param_dict_list = []
     for nb_prev_step in nb_prev_step_list:
         param_dict = dict()
@@ -190,7 +200,7 @@ if __name__ == "__main__":
         param_dict['nb_prev_step'] = nb_prev_step
         param_dict_list.append(param_dict)
 
-    n_jobs = 3
+    n_jobs = 4
     with Pool(n_jobs) as p:
         p.map(prepare_datasets, param_dict_list)
 

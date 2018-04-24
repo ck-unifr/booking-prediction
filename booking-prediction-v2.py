@@ -68,44 +68,12 @@ from catboost import CatBoostClassifier
 
 np.random.seed(42)
 
-# ---
-# Define file paths
-TRAIN_BOOKING_FILE_PATH = 'data/case_study_bookings_train.csv'    # training sessions for bookings
-TARGET_BOOKING_FILE_PATH = 'data/case_study_bookings_target.csv'  # target sessions to predict bookings
-
-TRAIN_ACTION_FILE_PATH = 'data/case_study_actions_train.csv'       # training set of user actions
-TARGET_ACTION_FILE_PATH = 'data/case_study_actions_target.csv'     # user actions in the target sessions
-
-# replace the NAN values by a specific value
-NA_ACTION_ID = -10
-NA_REFERENCE_ID = -10
-NA_STEP = 0
 
 feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
 target_column = ['has_booking']
 
 
-def preprocessing(df):
-    print('\n === preprocess data === \n')
-
-    df['action_id'].fillna(NA_ACTION_ID, inplace=True)
-    df['reference'].fillna(NA_REFERENCE_ID, inplace=True)
-    df['step'].fillna(NA_STEP, inplace=True)
-
-    df['referer_code'] = df['referer_code'].astype('int')
-    df['is_app'] = df['is_app'].astype('int')
-    df['agent_id'] = df['agent_id'].astype('int')
-    df['traffic_type'] = df['traffic_type'].astype('int')
-    df['action_id'] = df['action_id'].astype('int')
-    df['reference'] = df['reference'].astype('int')
-    df['step'] = df['step'].astype('int')
-
-    if 'has_booking' in df.columns:
-        df['has_booking'] = df['has_booking'].astype('int')
-
-    return df
-
-def get_train_set(df, feature_columns):
+def get_train_set(df, feature_columns, target_column):
     print('\n === get train set === \n')
 
     train_df = df[feature_columns + target_column]
@@ -125,12 +93,14 @@ def get_train_set(df, feature_columns):
 
     return train_x, train_y
 
+
 def get_test_set(df, feature_columns):
     print('\n === get test set === \n')
 
     test_x = df[feature_columns]
 
     return test_x
+
 
 def timer(start_time=None):
     # fork from https://www.kaggle.com/tilii7/hyperparameter-grid-search-with-xgboost
@@ -643,224 +613,96 @@ def save_prediction(target_user_df, y_pred, file_path):
     print('prediction:')
     print(prediciton_df['has_booking'].unique())
 
-    prediciton_df.to_csv(file_path, '\t')
+    prediciton_df.to_csv(file_path, '\t', index=False)
     print('save prediction to {}'.format(file_path))
 
 
-
 if __name__ == "__main__":
+    # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+    nb_prev_step_list = [1]
+    no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking']
+    no_cat_feature_name = ['step']
+    target_columns = ['has_booking']
 
-    # -------------------
-    # Step 1: read and explore the data
-    #
-    # train_booking_df = pd.read_csv(TRAIN_BOOKING_FILE_PATH, sep='\t')
-    # train_booking_df['ymd'] = pd.to_datetime(train_booking_df['ymd'].astype('str'))
-    #
-    # target_booking_df = pd.read_csv(TARGET_BOOKING_FILE_PATH, sep='\t')
-    # target_booking_df['ymd'] = pd.to_datetime(target_booking_df['ymd'].astype('str'))
-    #
-    # train_user_id_list = train_booking_df['user_id'].unique()
-    # train_session_id_list = train_booking_df['session_id'].unique()
-    #
-    # target_user_id_list = target_booking_df['user_id'].unique()
-    # target_session_id_list = target_booking_df['session_id'].unique()
-    #
-    # train_action_df = pd.read_csv(TRAIN_ACTION_FILE_PATH, sep='\t')
-    # train_action_df['ymd'] = pd.to_datetime(train_action_df['ymd'].astype('str'))
-    #
-    #
-    # target_action_df = pd.read_csv(TARGET_ACTION_FILE_PATH, sep='\t')
-    # target_action_df['ymd'] = pd.to_datetime(target_action_df['ymd'].astype('str'))
-    #
-    # train_user_df = pd.merge(train_booking_df, train_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    #
-    # train_user_df = preprocessing(train_user_df)
-    #
-    # target_user_df = pd.merge(target_booking_df, target_action_df, on=['ymd', 'user_id', 'session_id'], how='left')
-    #
-    # target_user_df = preprocessing(target_user_df)
-
-    # shuffle
-    #train_data_df = train_data_df.reindex(np.random.permutation(train_data_df.index))
-
-    # train_x, train_y = get_train_set(train_user_df, feature_columns)
-    # print('\n -----')
-    # print('train set size:')
-    # print(train_x.shape)
-    # print(train_y.shape)
-    #
-    # train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
-    #
-    # test_x = get_test_set(target_user_df, feature_columns)
-    # print('\n -----')
-    # print('test set size:')
-    # print(test_x.shape)
-    # print(test_y.shape)
-
-
-    # -------------------
-    # Step 2: feature engineering
-    #
-    # category data in machine learning
-    # Reference:
-    # https://medium.com/unstructured/how-feature-engineering-can-help-you-do-well-in-a-kaggle-competition-part-i-9cc9a883514d
-    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-66041f734512
-    # https://blog.myyellowroad.com/using-categorical-data-in-machine-learning-with-python-from-dummy-variables-to-deep-category-42fd0a43b009
-
-
-    # -------------------
-    # Step 3: train model and make predictions
-    #
-    # y_pred_list = []
-
-    #model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='xgb.ht.model')
-    #y_pred = predict('xgb.ht.model', val_x)
-    #y_pred_list.append(y_pred)
-
-    # model, model_path = train_xgb(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='xgb.model', n_estimators=100)
-    # y_pred = predict('xgb.model', val_x)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='lgbm.model',
-    #                                num_boost_round=200)
-    # y_pred = predict('lgbm.model', val_x, is_lgbm=True)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='lgbm.ht.model', num_boost_round=2)
-    # y_pred = predict('lgbm.ht.model', val_x, is_lgbm=True)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # print('columns')
-    # print(train_sub_x.columns)
-    # model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=False,
-    #                                    model_path='catboost.model', num_boost_round=10)
-    # y_pred = predict(model_path='catboost.model', X_test = val_x, is_catboost=True)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=False, model_path='rf.model', n_estimators=10)
-    # y_pred = predict('rf.model', val_x)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # model, model_path = train_rf(train_sub_x, train_sub_y, hyperparameter_tuning=True, model_path='rf.ht.model',
-    #                              n_estimators=100)
-    # y_pred = predict('rf.ht.model', val_x)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # model, model_path = train_nb(train_sub_x, train_sub_y, model_path='nb.model')
-    # y_pred = predict('nb.model', val_x)
-    # evaluate(val_y, y_pred)
-    # y_pred_list.append(y_pred)
-
-    # y_pred = blend_predictions(y_pred_list)
-    # print(y_pred)
-    # print(len(y_pred))
-    # print(type(y_pred))
-
-    # -------------------
-    # Step 4: evaluate the model
-    #
-    # We expect binary predictions for the target sessions, which will be evaluated by Matthews Correlation Coefficient (MCC)
-    # using the ground truth dataset on our side.
-    # The Matthews correlation coefficient is used in machine learning as a measure of the quality of binary (two-class) classifications.
-    # It takes into account true and false positives and negatives and is generally regarded as a balanced measure
-    # which can be used even if the classes are of very different sizes. The MCC is in essence a correlation coefficient value
-    # between -1 and +1.
-    # A coefficient of +1 represents a perfect prediction, 0 an average random prediction and -1 an inverse prediction.
-    # The statistic is also known as the phi coefficient. [source: Wikipedia]
-    #
-    # https://lettier.github.io/posts/2016-08-05-matthews-correlation-coefficient.html
-
-    # y_true = val_y
-    # print(y_true)
-    # print(len(y_true))
-    # print(type(y_true))
-
-    # evaluate(y_true, y_pred)
-
-    # -------------------
-    # Step 4: make prediction on the target data
-    #
-    # model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=False,
-    #                                    model_path='catboost-2.model', num_boost_round=2)
-    # y_pred = predict(model_path='catboost-2.model', X_test=test_x, is_catboost=True)
-    # save_prediction(target_user_df, y_pred, 'prediction-catboost-100.csv')
-
-    print('== prepare data (with historical data) ==')
-
-    # for each n steps add its m previous steps information
-    # n is the step_size and m is the nb_previous_action
-    step_size = 100
-    nb_previous_action = 2
-    print('step size: {}'.format(step_size))
-    print('number of previous steps: {}'.format(nb_previous_action))
-
-    train_user_df = pd.read_csv('train_user_df_{}_{}.csv'.format(step_size, nb_previous_action), sep='\t')
-    target_user_df = pd.read_csv('target_user_df_{}_{}.csv'.format(step_size, nb_previous_action), sep='\t')
-
-    print(train_user_df.columns)
-
-    no_feature_name_list = ['Unnamed: 0.1', 'Unnamed: 0', 'ymd', 'user_id', 'session_id', 'has_booking']
-    feature_columns = [feature for feature in train_user_df.columns if not feature in no_feature_name_list]
-    print('feature columns: ')
-    print(feature_columns)
-    target_columns = 'has_booking'
-
-    # shuffle the train set
-    train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
-
-    train_x, train_y = get_train_set(train_user_df, feature_columns)
-    print('\n -----')
-    print('train set size:')
-    print(train_x.shape)
-    print(train_y.shape)
-
-    print('feature columns: ')
-    print(train_x.columns)
-
-    test_x = get_test_set(target_user_df, feature_columns)
-    print('\n -----')
-    print('test set size:')
-    print(test_x.shape)
-    # print(test_y.shape)
-
-    print('== train the model on the whole train dataset (with historical data) ==')
-
-    approach = 2
-    num_boost_rounds = [300, 400, 500, 1000, 1200, 1500, 2000]
-    step_size = 100
-    nb_previous_action = 2
+    num_boost_rounds = [10]
     hyperparameter_tuning = False
 
-    category_feature_index_list = [i for i, feature in enumerate(feature_columns) if feature != 'step']
-    print('category feature index list:')
-    print(category_feature_index_list)
+    make_prediction = False
+    evaluation = True
 
-    for num_boost_round in num_boost_rounds:
-        print('\nnum boost round: {}'.format(num_boost_round))
+    for nb_prev_step in nb_prev_step_list:
+        train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
+        target_user_df = pd.read_csv('target_user_df-{}.csv'.format(nb_prev_step))
 
-        model_path = 'catboost-[approach]{}-[num_boost_round]{}-[ht]{}-[step_size]{}-[nb_prev]{}-full.model'.format(
-            approach,
-            num_boost_round,
-            hyperparameter_tuning,
-            step_size,
-            nb_previous_action)
+        print(train_user_df.columns)
 
-        model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=hyperparameter_tuning,
-                                           categorical_feature=category_feature_index_list,
-                                           model_path=model_path, num_boost_round=num_boost_round)
+        feature_columns = [feature for feature in train_user_df.columns if not (feature in no_feature_name_list)]
+        print('feature columns: ')
+        print(feature_columns)
 
-        print('== make predictions (with historical data) ==')
-        y_pred = predict(model_path=model_path, X_test=test_x, is_catboost=True)
+        category_feature_index_list = [i for i, feature in enumerate(feature_columns) if not (feature in no_cat_feature_name)]
+        print('category feature index list:')
+        print(category_feature_index_list)
 
-        prediction_file_path = 'prediction-catboost-{}-{}-{}-{}.csv'.format(approach, num_boost_round, step_size,
-                                                                            nb_previous_action)
-        save_prediction(target_user_df, y_pred, prediction_file_path)
+        # shuffle the train set
+        train_user_df = train_user_df.reindex(np.random.permutation(train_user_df.index))
+
+        train_x, train_y = get_train_set(train_user_df, feature_columns, target_columns)
+        print('\n -----')
+        print('train set size:')
+        print(train_x.shape)
+        print(train_y.shape)
+
+        print('feature columns: ')
+        print(train_x.columns)
+
+        if evaluation:
+            print('\n== evaluate on the validation set ==')
+            train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
+            dict_mcc_score = dict()
+            for num_boost_round in num_boost_rounds:
+                print('\nnum boost round: {}'.format(num_boost_round))
+
+                model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                                 hyperparameter_tuning,
+                                                                                                 nb_prev_step)
+
+                model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                   categorical_feature=category_feature_index_list,
+                                                   model_path=model_path, num_boost_round=num_boost_round)
+                y_pred = predict(model_path, val_x, is_catboost=True)
+                mcc_score, accuracy, f1score = evaluate(val_y, y_pred)
+                dict_mcc_score[num_boost_round] = mcc_score
+
+            for key, value in dict_mcc_score.items():
+                print('num boost: {}  mcc: {}'.format(key, value))
 
 
+        if make_prediction:
+            test_x = get_test_set(target_user_df, feature_columns)
+            print('\n -----')
+            print('test set size:')
+            print(test_x.shape)
+            # print(test_y.shape)
+
+            print('== train the model on the whole train dataset (with historical data) ==')
+
+            for num_boost_round in num_boost_rounds:
+                print('\nnum boost round: {}'.format(num_boost_round))
+
+                model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-full.model'.format(
+                    num_boost_round,
+                    hyperparameter_tuning,
+                    nb_prev_step)
+
+                model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                   categorical_feature=category_feature_index_list,
+                                                   model_path=model_path, num_boost_round=num_boost_round)
+
+                print('== make predictions (with historical data) ==')
+                y_pred = predict(model_path=model_path, X_test=test_x, is_catboost=True)
+
+                prediction_file_path = 'prediction-catboost-{}-{}-{}-{}.csv'.format(num_boost_round, nb_prev_step)
+
+                save_prediction(target_user_df, y_pred, prediction_file_path)
 
