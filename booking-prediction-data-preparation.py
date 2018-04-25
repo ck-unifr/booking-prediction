@@ -84,8 +84,8 @@ def prepare_data(df, nb_pre_steps=1,
     total_nb_rows = len(df['session_id'].unique())
 
     # initialize the column names
-    columns_add = ['duration'] # add new features
-    columns_add = columns_add + [f_name for f_name in feature_columns]
+    # columns_add = ['duration'] # add new features
+    columns_add = [f_name for f_name in feature_columns]
 
     for i in range(0, nb_pre_steps):
         for previous_action_name in previous_action_names:
@@ -101,16 +101,14 @@ def prepare_data(df, nb_pre_steps=1,
     index = 0 # index of each row
     for name, group in df.groupby('session_id'):
         max_step = np.max(group['step'])
-        min_step = np.min(group['step'])
 
         # get start time
-        start_time = pd.to_datetime(group[group['step'] == max_step]['ymd'].values[0].astype('str'))
-
+        # min_step = np.min(group['step'])
+        # start_time = pd.to_datetime(group[group['step'] == max_step]['ymd'].values[0].astype('str'))
         # get end time
-        end_time = pd.to_datetime(group[group['step'] == min_step]['ymd'].values[0].astype('str'))
-
+        # end_time = pd.to_datetime(group[group['step'] == min_step]['ymd'].values[0].astype('str'))
         # compute the duration of the session
-        duration = (end_time-start_time).total_seconds()
+        # duration = (end_time-start_time).total_seconds()
 
         # for each session, get its information in the last step
         sub_df = group[group['step'] == max_step]
@@ -119,7 +117,7 @@ def prepare_data(df, nb_pre_steps=1,
         val_add = []
 
         # duration
-        val_add.append(duration)
+        # val_add.append(duration)
 
         for feature_column in feature_columns:
             val_add.append(sub_df[feature_column].values[0])
