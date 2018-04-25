@@ -183,6 +183,7 @@ def prepare_datasets(param_dict):
 
 
 if __name__ == "__main__":
+    print('\n== prepare data ==')
 
     # train_user_df = pd.read_csv('train_user_df.csv')
     # target_user_df = pd.read_csv('target_user_df.csv')
@@ -206,7 +207,7 @@ if __name__ == "__main__":
 
 
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    nb_prev_step_list = [1, 2, 4]
+    nb_prev_step_list = [1, 2, 4, 64]
     param_dict_list = []
     for nb_prev_step in nb_prev_step_list:
         param_dict = dict()
