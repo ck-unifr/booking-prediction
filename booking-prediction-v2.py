@@ -625,8 +625,8 @@ if __name__ == "__main__":
 
     no_cat_feature_name = ['step']
     # no_cat_feature_name = []
-
     target_columns = ['has_booking']
+    # week_day = 'week_day'
 
     num_boost_rounds = [160]
     hyperparameter_tuning = False
@@ -643,7 +643,9 @@ if __name__ == "__main__":
         train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
         target_user_df = pd.read_csv('target_user_df-{}.csv'.format(nb_prev_step))
 
-        print(train_user_df.columns)
+
+        # train_user_df[week_day] = pd.to_datetime(train_user_df['ymd'].astype('str')).weekday()
+        # target_user_df[week_day] = pd.to_datetime(target_user_df['ymd'].astype('str')).weekday()
 
         # get all features names
         feature_columns = [feature for feature in train_user_df.columns if not (feature in no_feature_name_list)]
