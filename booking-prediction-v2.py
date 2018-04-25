@@ -525,7 +525,7 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, lgbm_threshold
         return y_pred
 
 
-def blend_predictions(y_pred_list, threshold=0.7):
+def blend_predictions(y_pred_list, threshold=0.5):
     """
     blend the predictions
     """
@@ -619,16 +619,21 @@ def save_prediction(target_user_df, y_pred, file_path):
 
 if __name__ == "__main__":
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    nb_prev_step_list = [1]
+    nb_prev_step_list = [8]
     no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking']
     no_cat_feature_name = ['step']
     target_columns = ['has_booking']
 
-    num_boost_rounds = [10]
+    num_boost_rounds = [200]
     hyperparameter_tuning = False
 
     make_prediction = False
     evaluation = True
+
+    # model_name = 'blend'
+    # model_name = 'xgb'
+    # model_name = 'lgbm'
+    model_name = 'catboost'
 
     for nb_prev_step in nb_prev_step_list:
         train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
@@ -636,9 +641,15 @@ if __name__ == "__main__":
 
         print(train_user_df.columns)
 
+        # get all features names
         feature_columns = [feature for feature in train_user_df.columns if not (feature in no_feature_name_list)]
         print('feature columns: ')
         print(feature_columns)
+
+        # get all category features names
+        categorical_feature = [feature for feature in feature_columns if (not feature in no_cat_feature_name)]
+        print('category feature columns: ')
+        print(categorical_feature)
 
         category_feature_index_list = [i for i, feature in enumerate(feature_columns) if not (feature in no_cat_feature_name)]
         print('category feature index list:')
@@ -663,14 +674,58 @@ if __name__ == "__main__":
             for num_boost_round in num_boost_rounds:
                 print('\nnum boost round: {}'.format(num_boost_round))
 
-                model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
-                                                                                                 hyperparameter_tuning,
-                                                                                                 nb_prev_step)
+                if model_name == 'catboost':
+                    model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                                     hyperparameter_tuning,
+                                                                                                     nb_prev_step)
 
-                model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=hyperparameter_tuning,
-                                                   categorical_feature=category_feature_index_list,
+                    model, model_path = train_catboost(train_sub_x, train_sub_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                       categorical_feature=category_feature_index_list,
+                                                       model_path=model_path, num_boost_round=num_boost_round)
+                    y_pred = predict(model_path, val_x, is_catboost=True)
+                elif model_name == 'xgb':
+                    model_path = 'xgb-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                               hyperparameter_tuning,
+                                                                                               nb_prev_step)
+                    model, model_path = train_xgb(X_train=train_sub_x, Y_train=train_sub_y,
+                                                  hyperparameter_tuning=hyperparameter_tuning,
+                                                  model_path=model_path, n_estimators=num_boost_round)
+                    y_pred = predict(model_path, val_x)
+
+                elif model_name == 'lgbm':
+                    model_path = 'lgbm-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                               hyperparameter_tuning,
+                                                                                               nb_prev_step)
+
+                    model, model_path = train_lgbm(train_sub_x, train_sub_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                   categorical_feature=categorical_feature,
                                                    model_path=model_path, num_boost_round=num_boost_round)
-                y_pred = predict(model_path, val_x, is_catboost=True)
+                    y_pred = predict(model_path, val_x, is_lgbm=True)
+
+                elif model_name == 'blend':
+                    y_pred_list = []
+                    model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                                    hyperparameter_tuning,
+                                                                                                    nb_prev_step)
+
+                    model, model_path = train_catboost(train_sub_x, train_sub_y,
+                                                       hyperparameter_tuning=hyperparameter_tuning,
+                                                       categorical_feature=category_feature_index_list,
+                                                       model_path=model_path, num_boost_round=num_boost_round)
+                    y_pred = predict(model_path, val_x, is_catboost=True)
+                    y_pred_list.append(y_pred)
+
+                    model_path = 'xgb-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                               hyperparameter_tuning,
+                                                                                               nb_prev_step)
+                    model, model_path = train_xgb(X_train=train_sub_x, Y_train=train_sub_y,
+                                                  hyperparameter_tuning=hyperparameter_tuning,
+                                                  model_path=model_path, n_estimators=num_boost_round)
+                    y_pred = predict(model_path, val_x)
+                    y_pred_list.append(y_pred)
+
+                    y_pred = blend_predictions(y_pred_list)
+
                 mcc_score, accuracy, f1score = evaluate(val_y, y_pred)
                 dict_mcc_score[num_boost_round] = mcc_score
 
@@ -679,7 +734,10 @@ if __name__ == "__main__":
 
 
         if make_prediction:
+            print('\n== make prediction ==')
+
             test_x = get_test_set(target_user_df, feature_columns)
+
             print('\n -----')
             print('test set size:')
             print(test_x.shape)
