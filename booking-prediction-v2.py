@@ -292,7 +292,8 @@ def train_nb(X_train, Y_train, model_path=None):
 
 
 def train_lgbm(X_train, Y_train,
-               categorical_feature=['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference'],
+               # categorical_feature=['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference'],
+               categorical_feature='auto',
                model_path=None, n_jobs=3, hyperparameter_tuning=False, num_boost_round=100, folds=3):
     """
     train a lightGBM model
@@ -619,12 +620,15 @@ def save_prediction(target_user_df, y_pred, file_path):
 
 if __name__ == "__main__":
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    nb_prev_step_list = [8]
+    nb_prev_step_list = [1, 2, 4, 8]
     no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking']
+
     no_cat_feature_name = ['step']
+    # no_cat_feature_name = []
+
     target_columns = ['has_booking']
 
-    num_boost_rounds = [200]
+    num_boost_rounds = [160]
     hyperparameter_tuning = False
 
     make_prediction = False
@@ -632,8 +636,8 @@ if __name__ == "__main__":
 
     # model_name = 'blend'
     # model_name = 'xgb'
-    # model_name = 'lgbm'
-    model_name = 'catboost'
+    model_name = 'lgbm'
+    # model_name = 'catboost'
 
     for nb_prev_step in nb_prev_step_list:
         train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
@@ -729,6 +733,7 @@ if __name__ == "__main__":
                 mcc_score, accuracy, f1score = evaluate(val_y, y_pred)
                 dict_mcc_score[num_boost_round] = mcc_score
 
+            print('number of previous steps: {}'.format(nb_prev_step))
             for key, value in dict_mcc_score.items():
                 print('num boost: {}  mcc: {}'.format(key, value))
 
