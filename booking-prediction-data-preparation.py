@@ -65,11 +65,13 @@ NA_ACTION_ID = -10
 NA_REFERENCE_ID = -10
 NA_STEP = 0
 
-feature_columns = ['ymd', 'referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
+# feature_columns = ['ymd', 'referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
+feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step']
 # target_column = ['has_booking']
 
 def prepare_data(df, nb_pre_steps=1,
-                 feature_columns = ['ymd', 'referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step'],
+                 feature_columns = ['referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step'],
+                 # feature_columns = ['ymd', 'referer_code', 'is_app', 'agent_id', 'traffic_type', 'action_id', 'reference', 'step'],
                  previous_action_names=['action_id', 'reference'],
                  target_column = 'has_booking',
                  default_action_values = [-10, -10]):
@@ -195,9 +197,9 @@ if __name__ == "__main__":
     # target_user_df.to_csv('target_user_df.csv', index=False)
 
     train_user_df = pd.read_csv('train_user_df.csv')
-    train_user_df['ymd'] = pd.to_datetime(train_user_df['ymd'].astype('str'))
+    # train_user_df['ymd'] = pd.to_datetime(train_user_df['ymd'].astype('str'))
     target_user_df = pd.read_csv('target_user_df.csv')
-    target_user_df['ymd'] = pd.to_datetime(target_user_df['ymd'].astype('str'))
+    # target_user_df['ymd'] = pd.to_datetime(target_user_df['ymd'].astype('str'))
 
     print(train_user_df.shape)
 
@@ -207,7 +209,8 @@ if __name__ == "__main__":
 
 
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    nb_prev_step_list = [1, 2, 4, 64]
+    # nb_prev_step_list = [1, 2, 4, 64]
+    nb_prev_step_list = [128, 64, 16, 256, 512, 8]
     param_dict_list = []
     for nb_prev_step in nb_prev_step_list:
         param_dict = dict()
@@ -216,7 +219,7 @@ if __name__ == "__main__":
         param_dict['nb_prev_step'] = nb_prev_step
         param_dict_list.append(param_dict)
 
-    n_jobs = 2
+    n_jobs = 4
     with Pool(n_jobs) as p:
         p.map(prepare_datasets, param_dict_list)
 

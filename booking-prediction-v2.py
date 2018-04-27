@@ -66,6 +66,14 @@ import lightgbm as lgb
 import catboost
 from catboost import CatBoostClassifier
 
+from keras.preprocessing import sequence
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout, Activation
+from keras.layers import Embedding
+from keras.layers import Conv1D, GlobalMaxPooling1D
+from keras.datasets import imdb
+from keras.utils import to_categorical
+
 np.random.seed(42)
 
 
@@ -312,27 +320,49 @@ def train_lgbm(X_train, Y_train,
 
 
     if not hyperparameter_tuning:
-        params = {
-            'boosting_type': 'gbdt',
-            'objective': 'binary',
-            'num_class': 1,                # must be 1 for non-multiclass training
-            'metric': 'binary_error',
-            #'metric': 'binary_logloss',
-            #'n_jobs': n_jobs,
-            'nthread': n_jobs,
-            #'num_leaves': 31,
-            'num_leaves': 64,
-            'min_child_weight': 1,
-            'min_child_samples': 5,
-            'scale_pos_weight': 1,
-            'reg_alpha': 5,
-            'learning_rate': 0.05,
-            'max_bin': 512,
-            #'feature_fraction': 0.9,
-            #'bagging_fraction': 0.8,
-            #'bagging_freq': 5,
-            #'verbose': 0
-        }
+        # params = {
+        #     'boosting_type': 'gbdt',
+        #     'objective': 'binary',
+        #     'num_class': 1,                # must be 1 for non-multiclass training
+        #     'metric': 'binary_error',
+        #     #'metric': 'binary_logloss',
+        #     #'n_jobs': n_jobs,
+        #     'nthread': n_jobs,
+        #     #'num_leaves': 31,
+        #
+        #     'num_leaves': 64,
+        #     'min_child_weight': 1,
+        #     'min_child_samples': 5,
+        #     'scale_pos_weight': 1,
+        #     'reg_alpha': 5,
+        #     'learning_rate': 0.05,
+        #     'max_bin': 512,
+        #
+        #     #'feature_fraction': 0.9,
+        #     #'bagging_fraction': 0.8,
+        #     #'bagging_freq': 5,
+        #     #'verbose': 0
+        # }
+
+        params = {'boosting_type': 'gbdt',
+                  'max_depth': -1,
+                  'objective': 'binary',
+                  'nthread': n_jobs,  # Updated from nthread
+                  'num_leaves': 64,
+                  'learning_rate': 0.05,
+                  'max_bin': 512,
+                  'subsample_for_bin': 200,
+                  'subsample': 1,
+                  'subsample_freq': 1,
+                  'colsample_bytree': 0.8,
+                  'reg_alpha': 5,
+                  'reg_lambda': 10,
+                  'min_split_gain': 0.5,
+                  'min_child_weight': 1,
+                  'min_child_samples': 5,
+                  'scale_pos_weight': 1,
+                  'num_class': 1,
+                  'metric': 'binary_error'}
 
         gbm = lgb.train(params,
                         d_train,
@@ -486,9 +516,61 @@ def train_catboost(X_train, Y_train,
 
     return model, model_path
 
+def train_cnn(X_train, Y_train, model_path, maxlen = 400, epochs = 2):
+    # max_features = 5000
+    max_features = 1000
+    batch_size = 64
+    embedding_dims = 20
+    filters = 250
+    kernel_size = 3
+    hidden_dims = 100
+
+    # X_train = sequence.pad_sequences(X_train, maxlen=maxlen)
+    # Y_train = to_categorical(Y_train)
+
+    print('Build model...')
+    model = Sequential()
+    model.add(Embedding(max_features,
+                        embedding_dims,
+                        input_length=maxlen))
+    model.add(Dropout(0.2))
+
+    # we add a Convolution1D, which will learn filters
+    # word group filters of size filter_length:
+    model.add(Conv1D(filters,
+                     kernel_size,
+                     padding='valid',
+                     activation='relu',
+                     strides=1))
+    # we use max pooling:
+    model.add(GlobalMaxPooling1D())
+
+    # We add a vanilla hidden layer:
+    model.add(Dense(hidden_dims))
+    model.add(Dropout(0.2))
+    model.add(Activation('relu'))
+
+    # We project onto a single unit output layer, and squash it with a sigmoid:
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+
+    model.fit(X_train, Y_train,
+              batch_size=batch_size,
+              epochs=epochs,
+              # validation_data=(x_test, y_test),
+              verbose=2,
+              )
+
+    model.save(model_path)
+
+    return model, model_path
 
 
-def predict(model_path, X_test, is_lgbm=False, is_catboost=False, lgbm_threshold=0.5):
+def predict(model_path, X_test, is_lgbm=False, is_catboost=False, is_cnn=False, maxlen=400, lgbm_threshold=0.5):
     """
     load the model and predict unseen data
     """
@@ -501,6 +583,8 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, lgbm_threshold
     elif is_catboost:
         model = CatBoostClassifier()
         model = model.load_model(model_path)
+    elif is_cnn:
+        model = load_model(model_path)
     else:
         # sklearn
         # xgboost
@@ -522,6 +606,11 @@ def predict(model_path, X_test, is_lgbm=False, is_catboost=False, lgbm_threshold
         #print(y_output)
         return(np.array(y_output))
         #return np.array([np.argmax(y) for y in y_pred])
+    elif is_cnn:
+        # X_test = sequence.pad_sequences(X_test, maxlen=maxlen)
+        y_pred = model.predict(X_test)
+        y_pred = [np.argmax(y) for y in y_pred]
+        return np.array(y_pred)
     else:
         return y_pred
 
@@ -620,13 +709,13 @@ def save_prediction(target_user_df, y_pred, file_path):
 
 if __name__ == "__main__":
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    nb_prev_step_list = [1, 2, 4, 8]
-    no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking']
-
+    nb_prev_step_list = [1]
+    no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking',]
     no_cat_feature_name = ['step']
     # no_cat_feature_name = []
     target_columns = ['has_booking']
-    # week_day = 'week_day'
+    week_day = 'week_day'
+    days = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}
 
     num_boost_rounds = [160]
     hyperparameter_tuning = False
@@ -638,14 +727,17 @@ if __name__ == "__main__":
     # model_name = 'xgb'
     model_name = 'lgbm'
     # model_name = 'catboost'
+    # model_name = 'cnn'
 
     for nb_prev_step in nb_prev_step_list:
         train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
         target_user_df = pd.read_csv('target_user_df-{}.csv'.format(nb_prev_step))
 
+        if 'ymd' in train_user_df.columns and 'ymd' in target_user_df.columns:
+            train_user_df[week_day] = pd.to_datetime(train_user_df['ymd'].astype('str')).dt.weekday_name.apply(lambda x: days[x]).astype('int')
+            target_user_df[week_day] = pd.to_datetime(target_user_df['ymd'].astype('str')).dt.weekday_name.apply(lambda x: days[x]).astype('int')
 
-        # train_user_df[week_day] = pd.to_datetime(train_user_df['ymd'].astype('str')).weekday()
-        # target_user_df[week_day] = pd.to_datetime(target_user_df['ymd'].astype('str')).weekday()
+        # print(train_user_df.head(5)[week_day])
 
         # get all features names
         feature_columns = [feature for feature in train_user_df.columns if not (feature in no_feature_name_list)]
@@ -675,7 +767,7 @@ if __name__ == "__main__":
 
         if evaluation:
             print('\n== evaluate on the validation set ==')
-            train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.2, random_state=42)
+            train_sub_x, val_x, train_sub_y, val_y = train_test_split(train_x, train_y, test_size=0.1, random_state=42)
             dict_mcc_score = dict()
             for num_boost_round in num_boost_rounds:
                 print('\nnum boost round: {}'.format(num_boost_round))
@@ -707,6 +799,13 @@ if __name__ == "__main__":
                                                    categorical_feature=categorical_feature,
                                                    model_path=model_path, num_boost_round=num_boost_round)
                     y_pred = predict(model_path, val_x, is_lgbm=True)
+                elif model_name == 'cnn':
+                    epochs = 100
+                    model_path = 'cnn-[epochs]{}-[nb_prev]{}-sub.model'.format(epochs, nb_prev_step)
+                    maxlen = train_sub_x.shape[1]
+                    model, model_path = train_cnn(train_sub_x, train_sub_y,
+                                                   model_path=model_path, epochs=epochs, maxlen=maxlen)
+                    y_pred = predict(model_path, val_x, is_cnn=True, maxlen=maxlen)
 
                 elif model_name == 'blend':
                     y_pred_list = []
