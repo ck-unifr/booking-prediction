@@ -717,7 +717,7 @@ if __name__ == "__main__":
     week_day = 'week_day'
     days = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}
 
-    num_boost_rounds = [1000]
+    num_boost_rounds = [1600]
     hyperparameter_tuning = False
 
     make_prediction = False
@@ -725,9 +725,10 @@ if __name__ == "__main__":
 
     # model_name = 'blend'
     # model_name = 'xgb'
-    # model_name = 'lgbm'
-    model_name = 'catboost'
+    model_name = 'lgbm'
+    # model_name = 'catboost'
     # model_name = 'cnn'
+    # model_name = 'rf'
 
     for nb_prev_step in nb_prev_step_list:
         train_user_df = pd.read_csv('train_user_df-{}.csv'.format(nb_prev_step))
@@ -799,6 +800,17 @@ if __name__ == "__main__":
                                                    categorical_feature=categorical_feature,
                                                    model_path=model_path, num_boost_round=num_boost_round)
                     y_pred = predict(model_path, val_x, is_lgbm=True)
+
+                elif model_name == 'rf':
+                    model_path = 'rf-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                              hyperparameter_tuning,
+                                                                                              nb_prev_step)
+
+                    model, model_path = train_rf(X_train=train_sub_x, Y_train=train_sub_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                 model_path=model_path, n_jobs=2, n_estimators=num_boost_round)
+
+                    y_pred = predict(model_path, val_x)
+
                 elif model_name == 'cnn':
                     epochs = 100
                     model_path = 'cnn-[epochs]{}-[nb_prev]{}-sub.model'.format(epochs, nb_prev_step)
