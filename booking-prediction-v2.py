@@ -717,16 +717,16 @@ if __name__ == "__main__":
     week_day = 'week_day'
     days = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}
 
-    num_boost_rounds = [1200]
+    num_boost_rounds = [1000]
     hyperparameter_tuning = False
 
     make_prediction = False
     evaluation = True
 
     # model_name = 'blend'
-    model_name = 'xgb'
+    # model_name = 'xgb'
     # model_name = 'lgbm'
-    # model_name = 'catboost'
+    model_name = 'catboost'
     # model_name = 'cnn'
 
     for nb_prev_step in nb_prev_step_list:

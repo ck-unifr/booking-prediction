@@ -76,10 +76,10 @@ def prepare_data(df, nb_pre_steps=1,
                  target_column = 'has_booking',
                  default_action_values = [-10, -10]):
     """
-    create a dataframe, such that each row contains the information of a session.
+    Create a dataframe, such that each row contains the information of a session.
     Since for each session, there is a sequence of information.
     In this dataframe, for each session,
-    I take only the last step information with its nb_pre_steps number of previous steps information.
+    I take only the last n steps information with its nb_pre_steps number of previous steps information.
     """
     print('\n== prepare data ==')
 
