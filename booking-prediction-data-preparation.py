@@ -209,8 +209,7 @@ if __name__ == "__main__":
 
 
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    # nb_prev_step_list = [1, 2, 4, 64]
-    nb_prev_step_list = [128, 64, 16, 256, 512, 8]
+    nb_prev_step_list = [32, 64, 128]
     param_dict_list = []
     for nb_prev_step in nb_prev_step_list:
         param_dict = dict()
@@ -219,7 +218,7 @@ if __name__ == "__main__":
         param_dict['nb_prev_step'] = nb_prev_step
         param_dict_list.append(param_dict)
 
-    n_jobs = 4
+    n_jobs = 1
     with Pool(n_jobs) as p:
         p.map(prepare_datasets, param_dict_list)
 

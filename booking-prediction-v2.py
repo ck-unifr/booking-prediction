@@ -709,7 +709,7 @@ def save_prediction(target_user_df, y_pred, file_path):
 
 if __name__ == "__main__":
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    nb_prev_step_list = [1]
+    nb_prev_step_list = [32]
     no_feature_name_list = ['ymd', 'user_id', 'session_id', 'has_booking',]
     no_cat_feature_name = ['step']
     # no_cat_feature_name = []
@@ -717,15 +717,15 @@ if __name__ == "__main__":
     week_day = 'week_day'
     days = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}
 
-    num_boost_rounds = [160]
+    num_boost_rounds = [1200]
     hyperparameter_tuning = False
 
     make_prediction = False
     evaluation = True
 
     # model_name = 'blend'
-    # model_name = 'xgb'
-    model_name = 'lgbm'
+    model_name = 'xgb'
+    # model_name = 'lgbm'
     # model_name = 'catboost'
     # model_name = 'cnn'
 
