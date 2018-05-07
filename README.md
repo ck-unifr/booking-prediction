@@ -43,5 +43,5 @@ The task is to train a machine learning model to estimate if a booking occurred 
     - booking-prediction-v2.py
 
 * predictions:
-    - prediction-*.py
+    - prediction-*.csv
 

@@ -503,7 +503,7 @@ def train_catboost(X_train, Y_train,
                                #learning_rate=1,
                                #depth=2
                                )
-    model.fit(X_train, Y_train, categorical_feature)
+    model.fit(X_train, Y_train, categorical_feature, logging_level='Silent')
 
     if model_path is None:
         model_path = 'catboost.model'
@@ -717,16 +717,16 @@ if __name__ == "__main__":
     week_day = 'week_day'
     days = {'Monday':1, 'Tuesday':2, 'Wednesday':3, 'Thursday':4, 'Friday':5, 'Saturday':6, 'Sunday':7}
 
-    num_boost_rounds = [4000]
+    num_boost_rounds = [10000]
     hyperparameter_tuning = False
 
     make_prediction = True
     evaluation = False
 
     # model_name = 'blend'
-    model_name = 'xgb'
+    # model_name = 'xgb'
     # model_name = 'lgbm'
-    # model_name = 'catboost'
+    model_name = 'catboost'
     # model_name = 'cnn'
     # model_name = 'rf'
 
@@ -861,49 +861,53 @@ if __name__ == "__main__":
             print(test_x.shape)
             # print(test_y.shape)
 
+            # get test session ids
+            original_target_user_df = pd.read_csv('target_user_df.csv')
+            test_session_id_list = []
+            for name, group in original_target_user_df.groupby('session_id'):
+                # print(group['session_id'].values[0])
+                test_session_id_list.append(group['session_id'].values[0])
+
+            assert target_user_df.shape[0] == len(test_session_id_list)
+
             print('== train the model on the whole train dataset (with historical data) ==')
 
             for num_boost_round in num_boost_rounds:
                 print('\nnum boost round: {}'.format(num_boost_round))
 
-                model_path = 'xgb-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
-                                                                                           hyperparameter_tuning,
-                                                                                           nb_prev_step)
+                if model_name == 'xgb':
 
-                # model, model_path = train_xgb(X_train=train_x, Y_train=train_y,
-                #                               hyperparameter_tuning=hyperparameter_tuning,
-                #                               model_path=model_path, n_estimators=num_boost_round)
+                    model_path = 'xgb-[num_boost_round]{}-[ht]{}-[nb_prev]{}-sub.model'.format(num_boost_round,
+                                                                                               hyperparameter_tuning,
+                                                                                               nb_prev_step)
 
-                print('== make predictions (with historical data) ==')
-                y_pred = predict(model_path=model_path, X_test=test_x)
+                    # model, model_path = train_xgb(X_train=train_x, Y_train=train_y,
+                    #                               hyperparameter_tuning=hyperparameter_tuning,
+                    #                               model_path=model_path, n_estimators=num_boost_round)
 
-                prediction_file_path = 'prediction-xgb-{}-{}.csv'.format(num_boost_round, nb_prev_step)
+                    print('== make predictions (with historical data) ==')
+                    y_pred = predict(model_path=model_path, X_test=test_x)
 
-                # get test session ids
-                original_target_user_df = pd.read_csv('target_user_df.csv')
-                test_session_id_list = []
-                for name, group in original_target_user_df.groupby('session_id'):
-                    # print(group['session_id'].values[0])
-                    test_session_id_list.append(group['session_id'].values[0])
+                    prediction_file_path = 'prediction-xgb-{}-{}.csv'.format(num_boost_round, nb_prev_step)
 
-                assert target_user_df.shape[0] == len(test_session_id_list)
+                    save_prediction(test_session_id_list, y_pred, prediction_file_path)
+                    print('save prediction to {}'.format(prediction_file_path))
 
-                save_prediction(test_session_id_list, y_pred, prediction_file_path)
-                print('save prediction to {}'.format(prediction_file_path))
+                elif model_name == 'catboost':
 
+                    model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-full.model'.format(
+                        num_boost_round,
+                        hyperparameter_tuning,
+                        nb_prev_step)
+                    model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=hyperparameter_tuning,
+                                                       categorical_feature=category_feature_index_list,
+                                                       model_path=model_path, num_boost_round=num_boost_round)
 
-                # model_path = 'catboost-[num_boost_round]{}-[ht]{}-[nb_prev]{}-full.model'.format(
-                #     num_boost_round,
-                #     hyperparameter_tuning,
-                #     nb_prev_step)
-                # model, model_path = train_catboost(train_x, train_y, hyperparameter_tuning=hyperparameter_tuning,
-                #                                    categorical_feature=category_feature_index_list,
-                #                                    model_path=model_path, num_boost_round=num_boost_round)
-                #
-                # print('== make predictions (with historical data) ==')
-                # y_pred = predict(model_path=model_path, X_test=test_x, is_catboost=True)
-                #
-                # prediction_file_path = 'prediction-catboost-{}-{}.csv'.format(num_boost_round, nb_prev_step)
-                #
-                # save_prediction(target_user_df, y_pred, prediction_file_path)
+                    print('== make predictions (with historical data) ==')
+                    y_pred = predict(model_path=model_path, X_test=test_x, is_catboost=True)
+
+                    prediction_file_path = 'prediction-catboost-{}-{}.csv'.format(num_boost_round, nb_prev_step)
+
+                    save_prediction(test_session_id_list, y_pred, prediction_file_path)
+                    print('save prediction to {}'.format(prediction_file_path))
 
