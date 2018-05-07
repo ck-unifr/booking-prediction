@@ -102,6 +102,9 @@ def prepare_data(df, nb_pre_steps=1,
     start_time = time.time()
     index = 0 # index of each row
     for name, group in df.groupby('session_id'):
+
+        print(group['session_id'].values[0])
+
         max_step = np.max(group['step'])
 
         # get start time
