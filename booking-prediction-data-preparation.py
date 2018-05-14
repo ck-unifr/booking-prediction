@@ -103,7 +103,7 @@ def prepare_data(df, nb_pre_steps=1,
     index = 0 # index of each row
     for name, group in df.groupby('session_id'):
 
-        print(group['session_id'].values[0])
+        # print(group['session_id'].values[0])
 
         max_step = np.max(group['step'])
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
 
     # nb_prev_step_list = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-    nb_prev_step_list = [32, 64, 128]
+    nb_prev_step_list = [64]
     param_dict_list = []
     for nb_prev_step in nb_prev_step_list:
         param_dict = dict()
